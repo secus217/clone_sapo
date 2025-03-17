@@ -1,0 +1,28 @@
+{
+  "name": "elysia-template-v3",
+  "version": "1.0.50",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "bun run --watch src/index.ts",
+    "dev:prod": "export NODE_ENV=production && bun run --watch src/index.ts",
+    "start": "bun run src/index.ts",
+    "migration:create": "mikro-orm migration:create",
+    "migration:up": "mikro-orm migration:up",
+    "migration:down": "mikro-orm migration:down"
+  },
+  "dependencies": {
+    "@elysiajs/cors": "^1.2.0",
+    "@elysiajs/jwt": "^1.2.0",
+    "@elysiajs/opentelemetry": "^1.2.0",
+    "@elysiajs/swagger": "^1.2.0",
+    "@mikro-orm/core": "^6.4.5",
+    "@mikro-orm/postgresql": "^6.4.5",
+    "elysia": "latest",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.8",
+    "bun-types": "latest"
+  },
+  "module": "src/index.js"
+}
