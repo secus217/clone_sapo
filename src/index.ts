@@ -4,13 +4,13 @@ import {RequestContext} from "@mikro-orm/core";
 import responseMiddleware from "./middlewares/responseMiddleware";
 import errorMiddleware from "./middlewares/errorMiddleware";
 import userController from "./controllers/user.controller";
-import followController from "./controllers/follow.controller"
+import manageUserController from "./controllers/manageUser.controller";
 import {swagger} from '@elysiajs/swagger'
 import {cors} from '@elysiajs/cors'
 import {opentelemetry} from '@elysiajs/opentelemetry'
 import {BatchSpanProcessor} from '@opentelemetry/sdk-trace-node'
 import {OTLPTraceExporter} from '@opentelemetry/exporter-trace-otlp-proto'
-import { jwt } from '@elysiajs/jwt';
+import {jwt} from '@elysiajs/jwt';
 
 
 const startApp = async () => {
@@ -57,6 +57,7 @@ const startApp = async () => {
             .use(opentelemetry())
             .group("/api", group =>
                 group.use(userController)
+                    .use(manageUserController)
             )
             .listen(3000);
 

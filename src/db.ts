@@ -1,12 +1,16 @@
 import {EntityManager, EntityRepository, MikroORM, Options} from "@mikro-orm/postgresql";
-import {User} from "./entities/index";
+import {User,Category,Inventory,Order,OrderItem,Product} from "./entities/index";
 import config from './mikro-orm.config'
 
 export interface Services {
   orm: MikroORM;
   em: EntityManager;
   user: EntityRepository<User>;
-  follow: EntityRepository<Follow>;
+  product: EntityRepository<Product>;
+  category: EntityRepository<Category>;
+  inventory: EntityRepository<Inventory>;
+  order: EntityRepository<Order>;
+  orderItem: EntityRepository<OrderItem>;
 }
 
 let dataSource: Services;
@@ -25,6 +29,12 @@ export async function initORM(options?: Options): Promise<Services> {
     orm,
     em: orm.em,
     user: orm.em.getRepository(User),
+    product:orm.em.getRepository(Product),
+    category:orm.em.getRepository(Category),
+    inventory:orm.em.getRepository(Inventory),
+    order:orm.em.getRepository(Order),
+    orderItem:orm.em.getRepository(OrderItem),
+
   };
   return dataSource;
 }
