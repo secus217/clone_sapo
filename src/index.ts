@@ -5,12 +5,14 @@ import responseMiddleware from "./middlewares/responseMiddleware";
 import errorMiddleware from "./middlewares/errorMiddleware";
 import userController from "./controllers/user.controller";
 import manageUserController from "./controllers/manageUser.controller";
+import productController from "./controllers/product.controller";
 import {swagger} from '@elysiajs/swagger'
 import {cors} from '@elysiajs/cors'
 import {opentelemetry} from '@elysiajs/opentelemetry'
 import {BatchSpanProcessor} from '@opentelemetry/sdk-trace-node'
 import {OTLPTraceExporter} from '@opentelemetry/exporter-trace-otlp-proto'
 import {jwt} from '@elysiajs/jwt';
+
 
 
 const startApp = async () => {
@@ -20,10 +22,9 @@ const startApp = async () => {
         await dataSource.orm.getSchemaGenerator().updateSchema();
         const app = new Elysia()
             .use(jwt({
-                name: 'jwt', // Tên của plugin
+                name: 'jwt',
                 secret: 'secretfjsdlkfjasdkldsakljsdkldsfa',
             }))
-            .use(cors())
             .onBeforeHandle(() => RequestContext.enter(dataSource.em))
             .onAfterHandle(responseMiddleware)
             .onError(errorMiddleware)
@@ -58,6 +59,7 @@ const startApp = async () => {
             .group("/api", group =>
                 group.use(userController)
                     .use(manageUserController)
+                    .use(productController)
             )
             .listen(3000);
 

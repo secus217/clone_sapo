@@ -1,40 +1,42 @@
-import { Entity, Property, PrimaryKey, ManyToOne, OneToMany, Collection, ManyToMany } from '@mikro-orm/core';
-import  Category  from './Category';
-import  Inventory from './Inventory';
-import OrderItem from './OrderItem';
-import {BaseEntity} from "./BaseEntity";
+    import { Entity, Property, PrimaryKey, ManyToOne, OneToMany, Collection, ManyToMany } from '@mikro-orm/core';
+    import  Category  from './Category';
+    import  Inventory from './Inventory';
+    import OrderItem from './OrderItem';
+    import {BaseEntity} from "./BaseEntity";
 
-@Entity()
-export default class Product extends BaseEntity{
+    @Entity()
+    export default class Product extends BaseEntity{
 
-    @Property()
-    name!: string;
+        @Property()
+        name!: string;
 
-    @Property({ columnType: 'text', nullable: true })
-    description?: string;
+        @Property({ columnType: 'text', nullable: true })
+        description?: string;
 
-    @Property()
-    sku!: string;
+        @Property()
+        sku!: string;
 
-    @Property()
-    barcode?: string;
+        @Property()
+        barcode?: string;
 
-    @Property()
-    price!: number;
+        @Property()
+        retailPrice!: number;
 
-    @Property()
-    costPrice!: number;
+        @Property()
+        importPrice!: number;
 
-    @Property({ default: true })
-    isActive!: boolean;
+        @Property({ default: true })
+        isActive!: boolean;
 
-    @ManyToOne(() => Category)
-    category!: Category;
+        @ManyToOne(() => Category,{ nullable: true })
+        category?: Category;
 
-    @OneToMany(() => OrderItem, item => item.product)
-    orderItems = new Collection<OrderItem>(this);
+        @OneToMany(() => OrderItem, item => item.product)
+        orderItems = new Collection<OrderItem>(this);
 
-    @OneToMany(() => Inventory, inventory => inventory.product)
-    inventories = new Collection<Inventory>(this);
+        @OneToMany(() => Inventory, inventory => inventory.product)
+        inventories = new Collection<Inventory>(this);
+        @Property({ nullable: true })
+        imageUrls?: string
 
-}
+    }

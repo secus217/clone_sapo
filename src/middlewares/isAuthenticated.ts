@@ -1,7 +1,6 @@
 import User from "../entities/User";
 import {initORM} from "../db";
-import { jwt } from '@elysiajs/jwt';
-const isAuthenticated = (
+export const isAuthenticated = (
 ) => {
     return async ({headers, jwt}: any) => {
         const db= await initORM();
@@ -14,7 +13,7 @@ const isAuthenticated = (
         if (!token) {
             throw new Error("Token not found");
         }
-        const user: User = await jwt.verify(token);
+        const user = await jwt.verify(token);
         if (!user) {
             throw new Error("Token is invalid");
         }
@@ -28,5 +27,14 @@ const isAuthenticated = (
         return {user: userInDb};
     }
 }
+export const isAdmin = () => {
+    return async (context: any) => {
+        const { user } = await isAuthenticated()(context);
 
-export default isAuthenticated
+        if (user.role!=="admin") {
+            throw new Error("Permission denied: Admin access required");
+        }
+
+        return { user };
+    }
+}
