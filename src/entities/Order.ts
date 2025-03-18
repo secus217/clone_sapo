@@ -18,7 +18,7 @@ export default class Order extends BaseEntity{
     orderNumber!: string;
 
     @ManyToOne(() => User)
-    user!: User;
+    customer!: User;
 
     @Enum(() => OrderStatus)
     status: OrderStatus = OrderStatus.PENDING;

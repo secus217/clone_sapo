@@ -1,6 +1,6 @@
 import {initORM} from "../db"
 import {Elysia} from "elysia"
-import {QueryOrder, Populate, wrap} from "@mikro-orm/core";
+import {QueryOrder, wrap} from "@mikro-orm/core";
 import {Product} from "../entities";
 
 export class ProductService {

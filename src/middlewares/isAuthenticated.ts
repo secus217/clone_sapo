@@ -23,7 +23,6 @@ export const isAuthenticated = (
         if (!userInDb) {
             throw new Error("User not found");
         }
-
         return {user: userInDb};
     }
 }

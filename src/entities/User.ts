@@ -12,8 +12,10 @@ export default class User extends BaseEntity {
 
   @Property()
   password!: string;
-
-
+  @Property({default:""})
+  phone!: string ;
+  @Property({default:""})
+  address?: string ;
   @Property()
   role!: string;
 }

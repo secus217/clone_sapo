@@ -1,18 +1,18 @@
-import {Entity, Property, PrimaryKey, ManyToOne, OneToMany ,Reference } from '@mikro-orm/core';
-import {BaseEntity} from "./BaseEntity";
-import Product  from './Product';
+    import {Entity, Property, PrimaryKey, ManyToOne, OneToMany ,Reference } from '@mikro-orm/core';
+    import {BaseEntity} from "./BaseEntity";
+    import Product  from './Product';
 
 
-@Entity()
-export default class Inventory extends BaseEntity{
+    @Entity()
+    export default class Inventory extends BaseEntity{
 
-    @ManyToOne(() => Product)
-    product!: Reference<Product>;
+        @ManyToOne(() => Product)
+        product!: Reference<Product>;
 
-    @Property()
-    quantity!: number;
+        @Property()
+        quantity!: number;
 
-    @Property({ nullable: true })
-    location?: string;
+        @Property({ nullable: true })
+        location?: string;
 
-}
+    }

@@ -6,6 +6,7 @@ import errorMiddleware from "./middlewares/errorMiddleware";
 import userController from "./controllers/user.controller";
 import manageUserController from "./controllers/manageUser.controller";
 import productController from "./controllers/product.controller";
+import categoryController from "./controllers/category.controller";
 import {swagger} from '@elysiajs/swagger'
 import {cors} from '@elysiajs/cors'
 import {opentelemetry} from '@elysiajs/opentelemetry'
@@ -60,6 +61,7 @@ const startApp = async () => {
                 group.use(userController)
                     .use(manageUserController)
                     .use(productController)
+                    .use(categoryController)
             )
             .listen(3000);
 
