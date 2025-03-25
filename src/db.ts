@@ -1,5 +1,5 @@
 import {EntityManager, EntityRepository, MikroORM, Options} from "@mikro-orm/postgresql";
-import {User,Category,Inventory,Order,OrderItem,Product} from "./entities/index";
+import {User,Category,Product,Store,ExportNote,ExportNoteDetail,OrderDetail,Orders,ReceiptNote} from "./entities/index";
 import config from './mikro-orm.config'
 
 export interface Services {
@@ -8,9 +8,12 @@ export interface Services {
   user: EntityRepository<User>;
   product: EntityRepository<Product>;
   category: EntityRepository<Category>;
-  inventory: EntityRepository<Inventory>;
-  order: EntityRepository<Order>;
-  orderItem: EntityRepository<OrderItem>;
+  exportNote: EntityRepository<ExportNote>;
+  exportNoteDetail:EntityRepository<ExportNoteDetail>;
+  orderDetail:EntityRepository<OrderDetail>;
+  orders:EntityRepository<Orders>;
+  receiptNote:EntityRepository<ReceiptNote>;
+  store:EntityRepository<Store>;
 }
 
 let dataSource: Services;
@@ -31,9 +34,12 @@ export async function initORM(options?: Options): Promise<Services> {
     user: orm.em.getRepository(User),
     product:orm.em.getRepository(Product),
     category:orm.em.getRepository(Category),
-    inventory:orm.em.getRepository(Inventory),
-    order:orm.em.getRepository(Order),
-    orderItem:orm.em.getRepository(OrderItem),
+    exportNote:orm.em.getRepository(ExportNote),
+    exportNoteDetail:orm.em.getRepository(ExportNoteDetail),
+    orders:orm.em.getRepository(Orders),
+    orderDetail:orm.em.getRepository(OrderDetail),
+    receiptNote:orm.em.getRepository(ReceiptNote),
+    store:orm.em.getRepository(Store)
 
   };
   return dataSource;

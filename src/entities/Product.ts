@@ -1,7 +1,5 @@
     import { Entity, Property, PrimaryKey, ManyToOne, OneToMany, Collection, ManyToMany } from '@mikro-orm/core';
     import  Category  from './Category';
-    import  Inventory from './Inventory';
-    import OrderItem from './OrderItem';
     import {BaseEntity} from "./BaseEntity";
 
     @Entity()
@@ -30,12 +28,6 @@
 
         @ManyToOne(() => Category,{ nullable: true })
         category?: Category;
-
-        @OneToMany(() => OrderItem, item => item.product)
-        orderItems = new Collection<OrderItem>(this);
-
-        @OneToMany(() => Inventory, inventory => inventory.product)
-        inventories = new Collection<Inventory>(this);
         @Property({ nullable: true })
         imageUrls?: string
 

@@ -1,55 +1,37 @@
 import {Elysia, t} from "elysia";
-import orderService from "../services/OrderService"
+import orderService from "../services/OrdersService";
 import {isAuthenticated, isAdmin} from "../middlewares/isAuthenticated"
 
 const orderController = new Elysia()
     .group("/order", group =>
         group
             .use(orderService)
-            .derive(isAuthenticated())
-            .get("/get-all-order", async ({query, orderService}) => {
-                const page = query.page ? parseInt(query.page as string) : 1;
-                const limit = query.limit ? parseInt(query.limit as string) : 10;
-                const search = query.status as string | undefined;
-                return await orderService.getAllOrders(page, limit, search);
+            .derive(isAdmin())
+            .post("/create-new-order", async ({body,ordersService}) => {
+                return await ordersService.createOrder(body)
             }, {
                 detail: {
-                    tags: ["Order"],
+                    tags: ["Manage order"],
                     security: [{JwtAuth: []}]
                 },
-                query: t.Object({
-                    page: t.Optional(t.String()),
-                    limit: t.Optional(t.String()),
-                    status: t.Optional(t.String()),
+                body: t.Object({
+                    storeId: t.Number(),
+                    createrId: t.Number(),
+                    paymentMethod: t.Union([
+                        t.Literal("cash"),
+                        t.Literal("bank")
+                    ]),
+                    items: t.Array(t.Object({
+                            productId: t.Number(),
+                            quantity: t.Number(),
+                            unitPrice: t.Number()
+                        })
+                    ),
+                    shippingAddress: t.String(),
+                    customerId: t.Optional(t.Number()),
+                    receiverName: t.String(),
+                    receiverPhone: t.String()
                 })
             })
-            .get("get-order-by-id", async ({query, orderService}) => {
-                return await orderService.getOrderById(query.id)
-            }, {
-                detail: {
-                    tags: ["Order"],
-                    security: [{JwtAuth: []}]
-                },
-                query: t.Object({
-                    id: t.Number()
-                })
-            })
-            // .post("create-order", async ({body, orderService}) => {
-            //         return await orderService.createOrder()
-            //     },{
-            //     detail: {
-            //         tags: ["Order"],
-            //         security: [{JwtAuth: []}]
-            //     },
-            //     body:t.Object({
-            //         customerId:t.Number(),
-            //         items:t.Array(t.Object({
-            //             productId:t.Number(),
-            //             quantity:t.Number(),
-            //             price:t.Number()
-            //         }))
-            //     })
-            //     }
-            // )
     )
 export default orderController;

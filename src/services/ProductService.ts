@@ -51,7 +51,7 @@ export class ProductService {
 
     async getProductById(id: number) {
         const db = await initORM();
-        const product = await db.product.findOne({id}, {populate: ['category', "inventories"]});
+        const product = await db.product.findOne({id}, {populate: ['category']});
         if (!product) {
             return {
                 success: false,
@@ -73,13 +73,6 @@ export class ProductService {
                     id: product.category.id,
                     name: product.category.name
                 } : null,
-                inventories: product.inventories.isInitialized()
-                    ? product.inventories.getItems().map(inv => ({
-                        id: inv.id,
-                        quantity: inv.quantity,
-                        location: inv.location
-                    }))
-                    : [],
                 imageUrls: product.imageUrls ?? ""
 
             }

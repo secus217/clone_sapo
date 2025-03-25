@@ -2,11 +2,11 @@ import { Entity, Property, PrimaryKey, ManyToOne, OneToMany, Collection, ManyToM
 import {BaseEntity} from "./BaseEntity";
 
 @Entity()
-export default class Inventory extends BaseEntity{
+export default class ExportNoteDetail extends BaseEntity{
    @Property()
-    storeId!: number;
+    exportNoteId!:number;
    @Property()
-    productId!: number;
+    productId!:number;
    @Property()
-    quantity!: number;
+    quantity!:number;
 }
