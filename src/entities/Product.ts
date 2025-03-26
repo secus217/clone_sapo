@@ -13,10 +13,6 @@
 
         @Property()
         sku!: string;
-
-        @Property()
-        barcode?: string;
-
         @Property()
         retailPrice!: number;
 

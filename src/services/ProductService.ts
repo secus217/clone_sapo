@@ -1,133 +1,69 @@
-import {initORM} from "../db"
-import {Elysia} from "elysia"
-import {QueryOrder, wrap} from "@mikro-orm/core";
-import {Product} from "../entities";
+import {initORM} from "../db";
+import {Elysia} from "elysia";
+import Product from "../entities/Product";
+import Category from "../entities/Category";
+import Inventory from "../entities/Inventory";
 
 export class ProductService {
-    async getAllProducts(page: number = 1, limit: number = 10, search?: string, categoryId?: number) {
-        const db = await initORM();
-        const offset = (page - 1) * limit;
-        const options = {
-            limit,
-            offset,
-            orderBy: {id: QueryOrder.ASC},
-            populate: ['category']
-        };
-
-        let where: any = {};
-        if (search) {
-            where.name = {$like: `%${search}%`};
-        }
-        if (categoryId) {
-            where.category = categoryId;
-        }
-
-        const [products, total] = await db.product.findAndCount(where, options as any);
-        const totalPages = Math.ceil(total / limit);
-
-        return {
-            data: products.map(product => ({
-                id: product.id,
-                name: product.name,
-                sku: product.sku,
-                retailPrice: product.retailPrice,
-                importPrice: product.importPrice,
-                category: product.category ? {
-                    id: product.category.id,
-                    name: product.category.name
-                } : null,
-                imageUrls: product.imageUrls ?? ""
-            })),
-            meta: {
-                currentPage: page,
-                itemsPerPage: limit,
-                totalItems: total,
-                totalPages,
-                hasNextPage: page < totalPages,
-                hasPreviousPage: page > 1
-            }
-        };
-    }
-
-    async getProductById(id: number) {
-        const db = await initORM();
-        const product = await db.product.findOne({id}, {populate: ['category']});
-        if (!product) {
-            return {
-                success: false,
-                message: 'Product not found!'
-            }
-        }
-        return {
-            success: true,
-            data: {
-                id: product.id,
-                name: product.name,
-                description: product.description,
-                sku: product.sku,
-                barcode: product.barcode,
-                retailPrice: product.retailPrice,
-                importPrice: product.importPrice,
-                isActive: product.isActive,
-                category: product.category ? {
-                    id: product.category.id,
-                    name: product.category.name
-                } : null,
-                imageUrls: product.imageUrls ?? ""
-
-            }
-        }
-    }
-
-    async createProduct(productData: {
-        name: string,
-        description: string,
-        sku: string,
-        barcode?: string,
-        retailPrice: number,
-        importPrice: number,
-        isActive: boolean,
-        categoryId?: number,
-        imageUrls?:string
+    async createProduct(data: {
+        name: string;
+        description?: string;
+        sku: string;
+        retailPrice: number;
+        importPrice: number;
+        isActive?: boolean;
+        categoryId?: number;
+        imageUrls?: string;
+        initialStoreId: number;
+        initialQuantity: number;
     }) {
         const db = await initORM();
-        const product = new Product();
-        wrap(product).assign({
-            name: productData.name,
-            description: productData.description,
-            sku: productData.sku,
-            barcode: productData.barcode,
-            retailPrice: productData.retailPrice,
-            importPrice: productData.importPrice,
-            isActive: productData.isActive !== undefined ? productData.isActive : true,
-            category:productData.categoryId,
-            imageUrls:productData.imageUrls ?? ""
-        });
-        if (productData.categoryId) {
-            const category = await db.category.findOne({id: productData.categoryId});
-            if (category) {
-                product.category = category;
+        const em = db.em.fork();
+        try {
+            await em.begin();
+            const existingSku = await em.findOne(Product, {sku: data.sku});
+            if (existingSku) {
+                throw new Error(`Product with SKU ${data.sku} already exists`);
             }
-        }
-        await db.em.persistAndFlush(product);
-        return {
-            success: true,
-            data: {
-                id: product.id,
-                name: product.name,
-                sku: product.sku,
-                retailPrice: product.retailPrice,
-                importPrice: product.importPrice,
-                isActive: product.isActive,
-                category: product.category ? {
-                    id: product.category.id,
-                    name: product.category.name
-                } : null,
-                imageUrls: product.imageUrls ?? ""
+            let category;
+            if (data.categoryId) {
+                category = await em.findOne(Category, {id: data.categoryId});
+                if (!category) {
+                    throw new Error(`Category with ID ${data.categoryId} not found`);
+                }
             }
+
+            const newProduct = em.create(Product, {
+                name: data.name,
+                description: data.description,
+                sku: data.sku,
+                retailPrice: data.retailPrice,
+                importPrice: data.importPrice,
+                isActive: data.isActive ?? true,
+                category: category,
+                imageUrls: data.imageUrls
+            });
+            await em.persistAndFlush(newProduct);
+            const initialInventory = em.create(Inventory, {
+                storeId: data.initialStoreId,
+                productId: newProduct.id,
+                quantity: data.initialQuantity
+            });
+            await em.persistAndFlush(initialInventory);
+            await em.commit();
+            return {
+                product: newProduct,
+                initialInventory: initialInventory
+            };
+        } catch (error: any) {
+            await em.rollback();
+            throw new Error(`Failed to create product: ${error.message}`);
+        } finally {
+            em.clear();
         }
     }
-    async updateProduct(id: number, productData: {
+
+    async updateProduct(productId: number, data: {
         name?: string;
         description?: string;
         sku?: string;
@@ -136,68 +72,83 @@ export class ProductService {
         importPrice?: number;
         isActive?: boolean;
         categoryId?: number;
-        imageUrls?:string;
+        imageUrls?: string;
     }) {
         const db = await initORM();
-        const product = await db.product.findOne({ id });
+        const em = db.em.fork();
 
-        if (!product) {
-            return { success: false, message: 'Không tìm thấy sản phẩm' };
-        }
-
-        wrap(product).assign({
-            name: productData.name !== undefined ? productData.name : product.name,
-            description: productData.description !== undefined ? productData.description : product.description,
-            sku: productData.sku !== undefined ? productData.sku : product.sku,
-            barcode: productData.barcode !== undefined ? productData.barcode : product.barcode,
-            retailPrice: productData.retailPrice !== undefined ? productData.retailPrice : product.retailPrice,
-            importPrice: productData.importPrice !== undefined ? productData.importPrice : product.importPrice,
-            isActive: productData.isActive !== undefined ? productData.isActive : product.isActive,
-            imageUrls: productData.imageUrls ?? ""
-        });
-
-        if (productData.categoryId) {
-            const category = await db.category.findOne({ id: productData.categoryId });
-            if (category) {
+        try {
+            await em.begin();
+            const product = await em.findOne(Product, {id: productId});
+            if (!product) {
+                throw new Error(`Product with ID ${productId} not found`);
+            }
+            if (data.sku && data.sku !== product.sku) {
+                const existingSku = await em.findOne(Product, {sku: data.sku});
+                if (existingSku) {
+                    throw new Error(`Product with SKU ${data.sku} already exists`);
+                }
+                product.sku = data.sku;
+            }
+            if (data.categoryId) {
+                const category = await em.findOne(Category, {id: data.categoryId});
+                if (!category) {
+                    throw new Error(`Category with ID ${data.categoryId} not found`);
+                }
                 product.category = category;
             }
-        }
-
-        await db.em.flush();
-
-        return {
-            success: true,
-            data: {
-                id: product.id,
-                name: product.name,
-                sku: product.sku,
-                retailPrice: product.retailPrice,
-                importPrice: product.importPrice,
-                isActive: product.isActive,
-                category: product.category ? {
-                    id: product.category.id,
-                    name: product.category.name
-                } : null,
-                imageUrls: product.imageUrls ?? ""
+            if (data.name !== undefined) product.name = data.name;
+            if (data.description !== undefined) product.description = data.description;
+            if (data.retailPrice !== undefined) {
+                if (data.retailPrice < 0) {
+                    throw new Error("Retail price must be non-negative");
+                }
+                product.retailPrice = data.retailPrice;
             }
-        };
-    }
-    async deleteProduct(id: number) {
-        const db = await initORM();
-        const product = await db.product.findOne({ id });
+            if (data.importPrice !== undefined) {
+                if (data.importPrice < 0) {
+                    throw new Error("Import price must be non-negative");
+                }
+                product.importPrice = data.importPrice;
+            }
+            if (data.isActive !== undefined) product.isActive = data.isActive;
+            if (data.imageUrls !== undefined) product.imageUrls = data.imageUrls;
+            await em.persistAndFlush(product);
 
-        if (!product) {
-            return { success: false, message: 'Không tìm thấy sản phẩm' };
+            await em.commit();
+            return await em.findOne(Product, {id: productId}, {populate: ['category']});
+        } catch (error: any) {
+            await em.rollback();
+            throw new Error(`Failed to update product: ${error.message}`);
+        } finally {
+            em.clear();
         }
-
-        await db.em.removeAndFlush(product);
-
-        return {
-            success: true,
-            message: 'Đã xóa sản phẩm thành công'
-        };
     }
 
+    async deleteProduct(productId: number) {
+        const db = await initORM();
+        const em= db.em.fork();
+        try {
+            await em.begin();
+            const product =await db.product.findOne({id: productId});
+            if (!product) {
+                throw new Error(`Product with ID ${productId} not found`);
+            }
+            const inventory=db.inventory.find({productId: productId});
+             await em.nativeDelete(Inventory,{productId: productId});
+             await em.removeAndFlush(product);
+             await em.commit();
+             return{
+                 message:"Successfully deleted",
+             }
+
+        } catch (e: any) {
+            throw new Error(e.message);
+        }
+        finally {
+            em.clear();
+        }
+    }
 }
 
-export default new Elysia().decorate("productService", new ProductService())
+export default new Elysia().decorate("productService", new ProductService());

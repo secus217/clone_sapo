@@ -13,7 +13,9 @@ export class OrdersService {
                           shippingAddress: string,
                           customerId?: number,
                           receiverName: string,
-                          receiverPhone: string
+                          receiverPhone: string,
+                          paymentStatus: 'pending' | 'paid',
+
                       }
     ) {
         const db = await initORM();
@@ -21,11 +23,21 @@ export class OrdersService {
 
         try {
             await em.begin();
+            for (const product of data.items) {
+                const inventory = await db.inventory.findOne({storeId: data.storeId, productId: product.productId});
+                if (!inventory) {
+                    throw new Error(`Inventory not found for product ${product.productId} in store`);
+                }
+                if (inventory.quantity < product.quantity) {
+                    throw new Error("Insufficient inventory for product")
+                }
+                inventory.quantity -= product.quantity;
+                em.persist(inventory);
+            }
 
             const totalQuantity = data.items.reduce((sum, item) => sum + item.quantity, 0);
             const totalAmount = data.items.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
 
-            // Tạo Order trước
             const order = em.create(Orders, {
                 storeId: data.storeId,
                 createrId: data.createrId,
@@ -38,13 +50,11 @@ export class OrdersService {
                 receiverPhone: data.receiverPhone,
                 shippingStatus: "processing",
                 customerId: data.customerId,
-                paymentStatus: "pending",
+                paymentStatus: data.paymentStatus,
             });
 
-            // Flush order để có ID
             await em.flush();
 
-            // Tạo OrderDetails
             const orderDetails = data.items.map(item =>
                 em.create(OrderDetail, {
                     orderId: order.id,
@@ -55,7 +65,6 @@ export class OrdersService {
                 })
             );
 
-            // Tạo ExportNote - CHÚ Ý PHẦN NÀY
             const exportNote = em.create(ExportNote, {
                 orderId: order.id,
                 storeId: data.storeId,
@@ -64,19 +73,16 @@ export class OrdersService {
                 status: "completed"
             });
 
-            // Flush exportNote để có ID
             await em.flush();
 
-            // Tạo ExportNoteDetails
             const exportNoteDetails = data.items.map(item =>
                 em.create(ExportNoteDetail, {
-                    exportNoteId: exportNote.id, // Gán exportNoteId từ exportNote vừa tạo
+                    exportNoteId: exportNote.id,
                     productId: item.productId,
                     quantity: item.quantity
                 })
             );
 
-            // Tạo ReceiptNote
             const receiptNote = em.create(ReceiptNote, {
                 orderId: order.id,
                 storeId: data.storeId,
@@ -86,7 +92,7 @@ export class OrdersService {
                 status: "completed"
             });
 
-            // Persist tất cả các entity
+
             await em.persistAndFlush([
                 order,
                 ...orderDetails,
@@ -106,14 +112,71 @@ export class OrdersService {
                 receiptNote
             };
         } catch (e: any) {
-            // Rollback nếu có lỗi
             await em.rollback();
             throw new Error(e.message);
         } finally {
-            // Đóng EntityManager
             em.clear();
         }
     }
+
+
+    async getOrderDetail(orderId: number) {
+        const db = await initORM();
+        const order = await db.orders.findOne({id: orderId});
+        if (!order) {
+            throw new Error("Order not found");
+        }
+        const orderDetail = await db.orderDetail.find({orderId: orderId});
+        return {
+            order,
+            orderDetail
+        }
+    }
+
+    async updateOrderStatus(orderId: number,
+                            status: "completed" | "cancelled" | 'pending',
+                            paymentStatus?: "paid" | "cancelled") {
+        const db = await initORM();
+        const order = await db.orders.findOne({id: orderId});
+        if (!order) {
+            throw new Error("Order not found");
+        }
+        order.orderStatus = status;
+        if (paymentStatus) {
+            order.paymentStatus = paymentStatus;
+        }
+        await db.em.persistAndFlush(order);
+        return {
+            order
+        }
+    }
+
+    async updateShippingStatus(orderId: number, status: "processing" | "completed" | 'cancelled') {
+        const db = await initORM();
+        const order = await db.orders.findOne({id: orderId});
+        if (!order) {
+            throw new Error("Order not found");
+        }
+        order.shippingStatus = status;
+        await db.em.persistAndFlush(order);
+        return {
+            order
+        }
+    }
+
+    async deleteOrder(orderId: number) {
+        const db = await initORM();
+        const order = await db.orders.findOne({id: orderId});
+        if (!order) {
+            throw new Error("Order not found");
+        }
+        await db.em.nativeDelete(OrderDetail, {orderId: orderId});
+        await db.em.removeAndFlush(order);
+        return {
+            message: "Order deleted successfully",
+        }
+    }
+
 }
 
 export default new Elysia().decorate("ordersService", new OrdersService())

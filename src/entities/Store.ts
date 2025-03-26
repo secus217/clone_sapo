@@ -4,6 +4,8 @@ import {BaseEntity} from "./BaseEntity";
 @Entity()
 export default class Store extends BaseEntity{
     @Property()
+    ownerId!: number;
+    @Property()
     name!: string;
     @Property()
     address!: string;

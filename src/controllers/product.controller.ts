@@ -7,90 +7,59 @@ const productController = new Elysia()
         group
             .use(productService)
             .derive(isAdmin())
-            .get("/get-all-product", async ({query, productService}) => {
-                const page = query.page ? parseInt(query.page as string) : 1;
-                const limit = query.limit ? parseInt(query.limit as string) : 10;
-                const search = query.search as string | undefined;
-                const categoryId = query.categoryId ? parseInt(query.categoryId as string) : undefined;
-
-                return await productService.getAllProducts(page, limit, search, categoryId);
+            .post("/create-new-product", async ({body, productService}) => {
+                return await productService.createProduct(body)
             }, {
                 detail: {
                     tags: ["Manage product"],
-                    security: [{JwtAuth: []}]
+                    security: [{JwtAuth: []}],
+                },
+                body: t.Object({
+                    name: t.String(),
+                    description: t.String(),
+                    sku: t.String(),
+                    retailPrice: t.Number(),
+                    importPrice: t.Number(),
+                    isActive: t.Optional(t.Boolean()),
+                    categoryId: t.Optional(t.Number()),
+                    imageUrls: t.Optional(t.String()),
+                    initialStoreId: t.Number(),
+                    initialQuantity: t.Number()
+                })
+            })
+            .put("/update-product", async ({body, productService}) => {
+                return await productService.updateProduct(body.productId, body.data)
+            }, {
+                detail: {
+                    tags: ["Manage product"],
+                    security: [{JwtAuth: []}],
+                },
+                body: t.Object({
+                    productId:t.Number(),
+                    data:t.Object({
+                        name: t.Optional(t.String()),
+                        description: t.Optional(t.String()),
+                        sku: t.Optional(t.String()),
+                        retailPrice: t.Optional(t.Number()),
+                        importPrice: t.Optional(t.Number()),
+                        isActive: t.Optional(t.Boolean()),
+                        categoryId: t.Optional(t.Number()),
+                        imageUrls: t.Optional(t.String()),
+                    })
+                })
+            })
+            .put("/delete-product", async ({query, productService}) => {
+                return await productService.deleteProduct(query.productId)
+            }, {
+                detail: {
+                    tags: ["Manage product"],
+                    security: [{JwtAuth: []}],
                 },
                 query: t.Object({
-                    page: t.Optional(t.String()),
-                    limit: t.Optional(t.String()),
-                    search: t.Optional(t.String()),
-                    categoryId: t.Optional(t.String())
+                    productId:t.Number()
                 })
             })
-            .get("/products/:id", async ({params, productService}) => {
-                return await productService.getProductById(params.id);
-            }, {
-                detail: {
-                    tags: ["Manage product"],
-                    security: [{JwtAuth: []}]
-                },
-                params: t.Object({
-                    id: t.Number()
-                })
-            })
-            .post("/create-product", async ({body, productService}) => {
-                    return await productService.createProduct(body);
-                }, {
-                    detail: {
-                        tags: ["Manage product"],
-                        security: [{JwtAuth: []}]
-                    },
-                    body: t.Object({
-                        name: t.String(),
-                        description: t.String(),
-                        sku: t.String(),
-                        barcode: t.Optional(t.String()),
-                        retailPrice: t.Number(),
-                        importPrice: t.Number(),
-                        isActive: t.Boolean(),
-                        category: t.Optional(t.Number()),
-                        imageUrls:t.Optional(t.String())
-                    })
-                }
-            )
-            .patch("/update-product/:id", async ({body, productService, params}) => {
-                    return await productService.updateProduct(params.id, body);
-                }, {
-                    detail: {
-                        tags: ["Manage product"],
-                        security: [{JwtAuth: []}]
-                    },
-                    body: t.Object({
-                        name: t.String(),
-                        description: t.String(),
-                        sku: t.String(),
-                        barcode: t.Optional(t.String()),
-                        retailPrice: t.Number(),
-                        importPrice: t.Number(),
-                        isActive: t.Boolean(),
-                        categoryId: t.Optional(t.Number()),
-                        imageUrls:t.Optional(t.String())
-                    }),
-                    params: t.Object({
-                        id: t.Number()
-                    })
-                }
-            )
-            .delete("/delete-product/:id", async ({productService, params}) => {
-                    return await productService.deleteProduct(params.id);
-                }, {
-                    detail: {
-                        tags: ["Manage product"],
-                        security: [{JwtAuth: []}]
-                    },
-                    params: t.Object({
-                        id: t.Number()
-                    })
-                }
-            )
+
+
     )
 export default productController;
