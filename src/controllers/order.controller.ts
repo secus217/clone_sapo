@@ -7,8 +7,8 @@ const orderController = new Elysia()
         group
             .use(orderService)
             .derive(isAdmin())
-            .post("/create-new-order", async ({body, ordersService}) => {
-                return await ordersService.createOrder(body)
+            .post("/create-new-order", async ({user,body, ordersService}) => {
+                return await ordersService.createOrder(body,user.id)
             }, {
                 detail: {
                     tags: ["Manage order"],
@@ -17,7 +17,6 @@ const orderController = new Elysia()
                 },
                 body: t.Object({
                     storeId: t.Number(),
-                    createrId: t.Number(),
                     paymentMethod: t.Union([
                         t.Literal("cash"),
                         t.Literal("bank")

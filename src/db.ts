@@ -42,7 +42,7 @@ export async function initORM(options?: Options): Promise<Services> {
     orderDetail:orm.em.getRepository(OrderDetail),
     receiptNote:orm.em.getRepository(ReceiptNote),
     store:orm.em.getRepository(Store),
-    inventory:orm.em.getRepository(Inventory)
+    inventory:orm.em.getRepository(Inventory),
 
   };
   return dataSource;

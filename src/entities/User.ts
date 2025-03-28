@@ -1,5 +1,5 @@
 import {BaseEntity} from "./BaseEntity";
-import {Entity, Property} from "@mikro-orm/core";
+import {Entity, OneToOne, Property} from "@mikro-orm/core";
 
 @Entity()
 export default class User extends BaseEntity {
@@ -18,4 +18,5 @@ export default class User extends BaseEntity {
   address?: string ;
   @Property()
   role!: string;
+
 }

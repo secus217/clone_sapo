@@ -4,7 +4,7 @@ import {Orders, ExportNote, OrderDetail, ExportNoteDetail, ReceiptNote, Product,
 
 export class OrdersService {
     async createOrder(data: {
-                          storeId: number, createrId: number, paymentMethod: 'cash' | 'bank',
+                          storeId: number, paymentMethod: 'cash' | 'bank',
                           items: Array<{
                               productId: number;
                               quantity: number;
@@ -16,7 +16,7 @@ export class OrdersService {
                           receiverPhone: string,
                           paymentStatus: 'pending' | 'paid',
 
-                      }
+                      },createrId: number
     ) {
         const db = await initORM();
         const em = db.em.fork();
@@ -40,7 +40,7 @@ export class OrdersService {
 
             const order = em.create(Orders, {
                 storeId: data.storeId,
-                createrId: data.createrId,
+                createrId: createrId,
                 shippingAddress: data.shippingAddress,
                 quantity: totalQuantity,
                 totalAmount: totalAmount,
@@ -68,7 +68,7 @@ export class OrdersService {
             const exportNote = em.create(ExportNote, {
                 orderId: order.id,
                 storeId: data.storeId,
-                createrId: data.createrId,
+                createrId: createrId,
                 totalQuantity: totalQuantity,
                 status: "completed"
             });
@@ -86,7 +86,7 @@ export class OrdersService {
             const receiptNote = em.create(ReceiptNote, {
                 orderId: order.id,
                 storeId: data.storeId,
-                createrId: data.createrId,
+                createrId: createrId,
                 totalAmount: totalAmount,
                 paymentMethod: data.paymentMethod,
                 status: "completed"
@@ -175,6 +175,43 @@ export class OrdersService {
         return {
             message: "Order deleted successfully",
         }
+    }
+    async getOrderByProductId(productId: number) {
+        const db = await initORM();
+        const orderdetail=await db.orderDetail.find({productId: productId});
+        if(!orderdetail) {
+            throw new Error("Order not found");
+        }
+        const orderIds=orderdetail.map(order => order.orderId);
+        const orders=await db.orders.find({
+            id:{$in: orderIds}
+        })
+        return {
+            orders
+        }
+
+    }
+    async getOrderByCustomerId(customerId: number) {
+        const db = await initORM();
+        const order=await  db.orders.find({customerId:customerId});
+        if(!order) {
+            throw new Error("Order not found");
+        }
+        const orderIds=order.map(order => order.id);
+        const orderDetaills= await db.orderDetail.find({
+            orderId:{$in: orderIds}
+        });
+        const totalAmount=order.reduce((sum,currentOrder)=>{
+            return sum + currentOrder.totalAmount;
+        },0);
+        return order.map(item=>{
+            const orderDetailItem=orderDetaills.find(orDetail=>orDetail.orderId===item.id)
+            return{
+                ...item,
+                orderDetailItem,
+                totalExpense:totalAmount
+            } as any;
+        })
     }
 
 }

@@ -127,28 +127,54 @@ export class ProductService {
 
     async deleteProduct(productId: number) {
         const db = await initORM();
-        const em= db.em.fork();
+        const em = db.em.fork();
         try {
             await em.begin();
-            const product =await db.product.findOne({id: productId});
+            const product = await db.product.findOne({id: productId});
             if (!product) {
                 throw new Error(`Product with ID ${productId} not found`);
             }
-            const inventory=db.inventory.find({productId: productId});
-             await em.nativeDelete(Inventory,{productId: productId});
-             await em.removeAndFlush(product);
-             await em.commit();
-             return{
-                 message:"Successfully deleted",
-             }
+            const inventory = db.inventory.find({productId: productId});
+            await em.nativeDelete(Inventory, {productId: productId});
+            await em.removeAndFlush(product);
+            await em.commit();
+            return {
+                message: "Successfully deleted",
+            }
 
         } catch (e: any) {
             throw new Error(e.message);
-        }
-        finally {
+        } finally {
             em.clear();
         }
     }
+
+    async getAllProductsByStoreId(storeId: number) {
+        const db = await initORM();
+        try {
+            const inventory = await db.inventory.find({storeId: storeId});
+            if (!inventory) {
+                throw new Error(`Product not found`);
+            }
+            const productIds = inventory.map(product => product.id);
+            const products = await db.product.find(
+                {
+                    id: {$in: productIds}
+                }
+            );
+            return products.map(product => {
+                const inventoryItem=inventory.find(item=>item.productId===product.id);
+                return{
+                    ...product,
+                    quantity:inventoryItem?inventoryItem.quantity:0
+                } as any
+            })
+
+        } catch (err: any) {
+            throw new Error(err.message);
+        }
+    }
+
 }
 
 export default new Elysia().decorate("productService", new ProductService());

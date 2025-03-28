@@ -59,6 +59,18 @@ const productController = new Elysia()
                     productId:t.Number()
                 })
             })
+            .get("/get-all-product-by-store-id", async ({query, productService}) => {
+                return await productService.getAllProductsByStoreId(query.storeId)
+            }, {
+                detail: {
+                    tags: ["Manage product"],
+                    security: [{JwtAuth: []}],
+                    description:"Get all product by store id"
+                },
+                query: t.Object({
+                    storeId:t.Number()
+                })
+            })
 
 
     )
