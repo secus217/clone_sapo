@@ -15,7 +15,6 @@ export interface Services {
   receiptNote:EntityRepository<ReceiptNote>;
   store:EntityRepository<Store>;
   inventory:EntityRepository<Inventory>;
-
 }
 
 let dataSource: Services;
@@ -43,7 +42,6 @@ export async function initORM(options?: Options): Promise<Services> {
     receiptNote:orm.em.getRepository(ReceiptNote),
     store:orm.em.getRepository(Store),
     inventory:orm.em.getRepository(Inventory),
-
   };
   return dataSource;
 }

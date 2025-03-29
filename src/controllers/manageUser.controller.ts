@@ -49,8 +49,9 @@ const manageUserController = new Elysia()
                     body: t.Object({
                         id: t.Number(),
                         data: t.Object({
-                            username: t.String(),
-                            role: t.String(),
+                            username: t.Optional(t.String()),
+                            phone:t.Optional(t.String()),
+                            address:t.Optional(t.String()),
                         })
                     })
                 }
@@ -68,5 +69,48 @@ const manageUserController = new Elysia()
                     })
                 }
             )
+            .post("/add-customer", async ({body, manageUserService}) => {
+                    return await manageUserService.addUserWithRoleCustomer(body)
+                },
+                {
+                    detail: {
+                        tags: ["Manage user"],
+                        security: [{JwtAuth: []}]
+                    },
+                    body: t.Object({
+                        username:t.String(),
+                        phone:t.String(),
+                        addresses:t.String()
+
+                    })
+                }
+            )
+            .get("/get-all-customer", async ({query, manageUserService}) => {
+                const page = query.page ? parseInt(query.page) : 1;
+                const limit = query.limit ? parseInt(query.limit) : 10;
+                return await manageUserService.getALLCustomer(page, limit);
+            }, {
+                detail: {
+                    tags: ["Manage user"],
+                    security: [{JwtAuth: []}]
+                },
+                query: t.Object({
+                    page: t.Optional(t.String()),
+                    limit: t.Optional(t.String())
+                })
+            })
+            .put("/update-role-for-user", async ({body, manageUserService}) => {
+                return await manageUserService.updateRoleForUser(body.userId, body.role);
+            }, {
+                detail: {
+                    tags: ["Manage user"],
+                    security: [{JwtAuth: []}]
+                },
+                body:t.Object({
+                    userId:t.Number(),
+                    role:t.String()
+                })
+            })
+
     )
 export default manageUserController;

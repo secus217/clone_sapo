@@ -24,6 +24,11 @@ const startApp = async () => {
         //sync entities classes to database
         await dataSource.orm.getSchemaGenerator().updateSchema();
         const app = new Elysia()
+            .use(cors({ // Thêm middleware CORS
+                origin: 'http://localhost:3001',
+                methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+                allowedHeaders: ['Content-Type', 'Authorization'],
+            }))
             .use(jwt({
                 name: 'jwt',
                 secret: 'secretfjsdlkfjasdkldsakljsdkldsfa',
