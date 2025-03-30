@@ -9,6 +9,8 @@ import productController from "./controllers/product.controller";
 import categoryController from "./controllers/category.controller";
 import orderController from "./controllers/order.controller";
 import storeController from "./controllers/store.controller";
+import receiptNoteController from "./controllers/receiptNote.controller";
+import exportNoteController from "./controllers/exportNote.controller";
 import {swagger} from '@elysiajs/swagger'
 import {cors} from '@elysiajs/cors'
 import {opentelemetry} from '@elysiajs/opentelemetry'
@@ -71,6 +73,8 @@ const startApp = async () => {
                     .use(categoryController)
                     .use(orderController)
                     .use(storeController)
+                    .use(receiptNoteController)
+                    .use(exportNoteController)
             )
             .listen(3000);
 

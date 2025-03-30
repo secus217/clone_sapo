@@ -88,7 +88,9 @@ const manageUserController = new Elysia()
             .get("/get-all-customer", async ({query, manageUserService}) => {
                 const page = query.page ? parseInt(query.page) : 1;
                 const limit = query.limit ? parseInt(query.limit) : 10;
-                return await manageUserService.getALLCustomer(page, limit);
+                const search = query.search;
+
+                return await manageUserService.getALLCustomer(page, limit, search);
             }, {
                 detail: {
                     tags: ["Manage user"],
@@ -96,7 +98,8 @@ const manageUserController = new Elysia()
                 },
                 query: t.Object({
                     page: t.Optional(t.String()),
-                    limit: t.Optional(t.String())
+                    limit: t.Optional(t.String()),
+                    search: t.Optional(t.String())
                 })
             })
             .put("/update-role-for-user", async ({body, manageUserService}) => {
@@ -109,6 +112,20 @@ const manageUserController = new Elysia()
                 body:t.Object({
                     userId:t.Number(),
                     role:t.String()
+                })
+            })
+            .get("/get-all-staff", async ({query, manageUserService}) => {
+                const page = query.page ? parseInt(query.page) : 1;
+                const limit = query.limit ? parseInt(query.limit) : 10;
+                return await manageUserService.getAllStaff(page, limit);
+            }, {
+                detail: {
+                    tags: ["Manage user"],
+                    security: [{JwtAuth: []}]
+                },
+                query: t.Object({
+                    page: t.Optional(t.String()),
+                    limit: t.Optional(t.String())
                 })
             })
 

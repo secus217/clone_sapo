@@ -27,10 +27,7 @@ const orderController = new Elysia()
                             unitPrice: t.Number()
                         })
                     ),
-                    shippingAddress: t.String(),
                     customerId: t.Optional(t.Number()),
-                    receiverName: t.String(),
-                    receiverPhone: t.String(),
                     paymentStatus: t.Union([
                             t.Literal("pending"),
                             t.Literal("paid")
@@ -89,6 +86,32 @@ const orderController = new Elysia()
                                 t.Literal('cancelled')
                             ]
                         )
+                    })
+                }
+            )
+            .get("/get-order-by-product-id", async ({query, ordersService}) => {
+                    return await ordersService.getOrderByProductId(query.productId)
+                }, {
+                    detail: {
+                        tags: ["Manage order"],
+                        security: [{JwtAuth: []}],
+                        description:"Get order by product id"
+                    },
+                    query: t.Object({
+                        productId:t.Number()
+                    })
+                }
+            )
+            .get("/get-order-by-customer-id", async ({query, ordersService}) => {
+                    return await ordersService.getOrderByCustomerId(query.customerId)
+                }, {
+                    detail: {
+                        tags: ["Manage order"],
+                        security: [{JwtAuth: []}],
+                        description:"Get order by customer id"
+                    },
+                    query: t.Object({
+                        customerId:t.Number()
                     })
                 }
             )

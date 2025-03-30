@@ -4,16 +4,13 @@ import {Orders, ExportNote, OrderDetail, ExportNoteDetail, ReceiptNote, Product,
 
 export class OrdersService {
     async createOrder(data: {
-                          storeId: number, paymentMethod: 'cash' | 'bank',
+                          fromStoreId: number, paymentMethod: 'cash' | 'bank',
                           items: Array<{
                               productId: number;
                               quantity: number;
                               unitPrice: number;
                           }>,
-                          shippingAddress: string,
                           customerId?: number,
-                          receiverName: string,
-                          receiverPhone: string,
                           paymentStatus: 'pending' | 'paid',
 
                       },createrId: number
@@ -24,7 +21,7 @@ export class OrdersService {
         try {
             await em.begin();
             for (const product of data.items) {
-                const inventory = await db.inventory.findOne({storeId: data.storeId, productId: product.productId});
+                const inventory = await db.inventory.findOne({storeId: data.fromStoreId, productId: product.productId});
                 if (!inventory) {
                     throw new Error(`Inventory not found for product ${product.productId} in store`);
                 }
@@ -39,15 +36,12 @@ export class OrdersService {
             const totalAmount = data.items.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
 
             const order = em.create(Orders, {
-                storeId: data.storeId,
+                storeId: data.fromStoreId,
                 createrId: createrId,
-                shippingAddress: data.shippingAddress,
                 quantity: totalQuantity,
                 totalAmount: totalAmount,
                 paymentMethod: data.paymentMethod,
                 orderStatus: "pending",
-                receiverName: data.receiverName,
-                receiverPhone: data.receiverPhone,
                 shippingStatus: "processing",
                 customerId: data.customerId,
                 paymentStatus: data.paymentStatus,
@@ -67,8 +61,9 @@ export class OrdersService {
 
             const exportNote = em.create(ExportNote, {
                 orderId: order.id,
-                storeId: data.storeId,
+                fromStoreId: data.fromStoreId,
                 createrId: createrId,
+                toStoreId:null,
                 totalQuantity: totalQuantity,
                 status: "completed"
             });
@@ -85,7 +80,7 @@ export class OrdersService {
 
             const receiptNote = em.create(ReceiptNote, {
                 orderId: order.id,
-                storeId: data.storeId,
+                storeId: data.fromStoreId,
                 createrId: createrId,
                 totalAmount: totalAmount,
                 paymentMethod: data.paymentMethod,
@@ -186,9 +181,17 @@ export class OrdersService {
         const orders=await db.orders.find({
             id:{$in: orderIds}
         })
+        const orderWithDetails:any=orders.map(order=>{
+            const detailForOrder=orderdetail.filter(detail=>detail.orderId===order.id);
+            return {
+                ...order,
+                orderDetail:detailForOrder
+            }
+        });
         return {
-            orders
+            orders:orderWithDetails
         }
+
 
     }
     async getOrderByCustomerId(customerId: number) {

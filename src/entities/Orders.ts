@@ -17,14 +17,8 @@ export default class Orders extends BaseEntity{
     paymentStatus!: "pending" | "paid" | "cancelled";
     @Property()
     orderStatus!: "completed" | "cancelled"|'pending' ;
-    @Property()
-    receiverName!: string;
-    @Property()
-    receiverPhone!: string;
     @Property({default:"processing"})
     shippingStatus?:  "processing" | "completed" |'cancelled' ;
-    @Property()
-    shippingAddress!: string;
     @Property({nullable: true})
     customerId?: number;
 }

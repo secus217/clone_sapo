@@ -1,10 +1,12 @@
 import {Entity, Property, PrimaryKey, ManyToOne, OneToMany, Collection, ManyToMany} from '@mikro-orm/core';
 import {BaseEntity} from "./BaseEntity";
 
+
+
 @Entity()
 export default class ReceiptNote extends BaseEntity {
-    @Property()
-    orderId!: number;
+    @Property({nullable: true})
+    orderId?: number;
     @Property()
     storeId!: number;
     @Property()
@@ -12,9 +14,11 @@ export default class ReceiptNote extends BaseEntity {
     @Property()
     totalAmount!: number;
     @Property()
-    paymentMethod!: 'cash' | 'bank';
+    paymentMethod?: 'cash' |'bank';
     @Property({nullable: true})
     note?: string;
-    @Property({default:'completed'})
-    status!: 'completed'|'cancelled';
+    @Property({default: 'completed'})
+    status!: 'completed' | 'cancelled';
+    @Property()
+    type?: "THU" | "CHI";
 }

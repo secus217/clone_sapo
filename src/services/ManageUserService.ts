@@ -44,6 +44,8 @@ export class ManageUserService {
         return {
             id: user.id,
             username: user.username,
+            phone:user.phone,
+            address: user.address,
             role: user.role
         }
     }
@@ -96,16 +98,32 @@ export class ManageUserService {
         }
     }
 
-    async getALLCustomer(page = 1, limit = 10) {
+    async getALLCustomer(page:number = 1, limit:number= 10,search?: string) {
         const db = await initORM();
         const offset = (page - 1) * limit;
-        return await db.user.findAll({
-            where: {
-                role: "customer"
-            },
-            limit: limit,
-            offset: offset
-        });
+        const options = {
+            limit,
+            offset,
+            orderBy: {id: QueryOrder.ASC}
+        }
+        const where = search ? {username: {$like: `%${search}%`,role:"customer"}} : { role: "customer" };
+        const [users, total] = await db.user.findAndCount(where, options);
+        const totalPages = Math.ceil(total / limit);
+        return {
+            data: users.map(user => ({
+                id: user.id,
+                username: user.username,
+                role: user.role
+            })),
+            meta: {
+                currentPage: page,
+                itemsPerPage: limit,
+                totalItems: total,
+                totalPages,
+                hasNextPage: page < totalPages,
+                hastPreviousPage: page > 1
+            }
+        }
     }
 
     async updateRoleForUser(userId: number, role: string) {
@@ -121,6 +139,17 @@ export class ManageUserService {
         return {
             staff
         }
+    }
+    async getAllStaff(page = 1, limit = 10){
+        const db = await initORM();
+        const offset = (page - 1) * limit;
+        return await db.user.findAll({
+            where: {
+                role: "staff"
+            },
+            limit: limit,
+            offset: offset
+        });
     }
 }
 
