@@ -16,7 +16,7 @@ const orderController = new Elysia()
                     description: "paymentStatus can only be 'pending' or 'paid'," + "paymentMethod can only be 'cash' or 'bank'"
                 },
                 body: t.Object({
-                    storeId: t.Number(),
+                    fromStoreId: t.Number(),
                     paymentMethod: t.Union([
                         t.Literal("cash"),
                         t.Literal("bank")
@@ -103,6 +103,19 @@ const orderController = new Elysia()
                 }
             )
             .get("/get-order-by-customer-id", async ({query, ordersService}) => {
+                    return await ordersService.getOrderByCustomerId(query.customerId)
+                }, {
+                    detail: {
+                        tags: ["Manage order"],
+                        security: [{JwtAuth: []}],
+                        description:"Get order by customer id"
+                    },
+                    query: t.Object({
+                        customerId:t.Number()
+                    })
+                }
+            )
+            .get("/get-all-order", async ({query, ordersService}) => {
                     return await ordersService.getOrderByCustomerId(query.customerId)
                 }, {
                     detail: {

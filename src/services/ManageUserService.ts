@@ -113,6 +113,8 @@ export class ManageUserService {
             data: users.map(user => ({
                 id: user.id,
                 username: user.username,
+                phone:user.phone,
+                address: user.address,
                 role: user.role
             })),
             meta: {

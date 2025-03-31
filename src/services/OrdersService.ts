@@ -1,6 +1,6 @@
 import {initORM} from "../db"
 import {Elysia} from "elysia"
-import {Orders, ExportNote, OrderDetail, ExportNoteDetail, ReceiptNote, Product, Inventory} from "../entities/index";
+import {ExportNote, ExportNoteDetail, OrderDetail, Orders, ReceiptNote} from "../entities/index";
 
 export class OrdersService {
     async createOrder(data: {
@@ -216,6 +216,10 @@ export class OrdersService {
             } as any;
         })
     }
+    // async getAllOrder(page:number=1,limit:number,search) {
+    //     const db=await initORM();
+    //     return db.orders.findAll();
+    // }
 
 }
 
