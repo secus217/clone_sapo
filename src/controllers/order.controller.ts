@@ -116,16 +116,22 @@ const orderController = new Elysia()
                 }
             )
             .get("/get-all-order", async ({query, ordersService}) => {
-                    return await ordersService.getAllOrder(query.page,query.limit);
+                const filter={
+                    productId:query.productId,
+                    storeId:query.storeId,
+                }
+                    return await ordersService.getAllOrder(query.page,query.limit,filter);
                 }, {
                     detail: {
                         tags: ["Manage order"],
                         security: [{JwtAuth: []}],
-                        description:"Get order by customer id"
+                        description:"Get all order"
                     },
                     query: t.Object({
                         page:t.Optional(t.Number()),
-                        limit:t.Optional(t.Number())
+                        limit:t.Optional(t.Number()),
+                        productId: t.Optional(t.Number()),
+                        storeId: t.Optional(t.Number())
                     })
                 }
             )

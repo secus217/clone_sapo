@@ -17,4 +17,6 @@ export default class ExportNote extends BaseEntity{
     status!: 'pending'|'completed';
     @Property({nullable: true})
     note?: string;
+    @Property({nullable:true})
+    type?:"xuat"|"nhap"
 }

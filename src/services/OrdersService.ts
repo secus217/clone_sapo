@@ -217,21 +217,57 @@ export class OrdersService {
             } as any;
         })
     }
-    async getAllOrder(page:number=1,limit:number=10) {
+    async getAllOrder(page:number=1,limit:number=10,filters: {
+        productId?: number,
+        storeId?: number
+    } = {}) {
         const db=await initORM();
         const offset=(page - 1) * limit;
-        const [order,total]=await db.orders.findAndCount({},{
+        const whereCondition: any = {};
+        if (filters.productId) {
+            whereCondition['orderDetails'] = {
+                productId: filters.productId
+            };
+        }
+        if (filters.storeId) {
+            whereCondition['storeId'] = filters.storeId;
+        }
+        const [orders,total]=await db.orders.findAndCount(whereCondition,{
             limit,
             offset,
             orderBy:{createdAt:'DESC'}
         });
+        const orderWithUsers = await Promise.all(orders.map(async (order) => {
+            const [creater, customer] = await Promise.all([
+                db.user.findOne({ id: order.createrId }).then(user => {
+                    if (user) {
+                        const { password, ...userWithoutPassword } = user;
+                        return userWithoutPassword;
+                    }
+                    return null;
+                }),
+                db.user.findOne({ id: order.customerId }).then(user => {
+                    if (user) {
+                        const { password, ...userWithoutPassword } = user;
+                        return userWithoutPassword;
+                    }
+                    return null;
+                })
+            ]);
+
+            return {
+                ...order,
+                creater,
+                customer
+            };
+        }));
         return{
-            order,
+            orders:orderWithUsers,
             total,
             page,
             limit,
             totalPages: Math.ceil(total / limit)
-        }
+        } as any
 
     }
 

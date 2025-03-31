@@ -1,5 +1,6 @@
 import { Entity, Property, PrimaryKey, ManyToOne, OneToMany, Collection, ManyToMany } from '@mikro-orm/core';
 import {BaseEntity} from "./BaseEntity";
+import {OrderDetail} from "./index";
 
 @Entity()
 export default class Orders extends BaseEntity{

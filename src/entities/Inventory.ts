@@ -3,8 +3,8 @@ import {BaseEntity} from "./BaseEntity";
 
 @Entity()
 export default class Inventory extends BaseEntity{
-   @Property()
-    storeId!: number;
+   @Property({nullable:true})
+    storeId?: number;
    @Property()
     productId!: number;
    @Property()

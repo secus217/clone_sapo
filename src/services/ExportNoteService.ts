@@ -11,7 +11,7 @@ export class ExportNoteService {
             productId: number;
             quantity: number;
         }>,
-        note?: string
+        note?: string,
     }) {
         try {
             const db = await initORM()
@@ -33,6 +33,7 @@ export class ExportNoteService {
             throw new Error(e.message);
         }
     }
+
     async getProductsByStoreIdsAndProductsId(storeId: number, product: any[], db: Services) {
         const inventories = await db.inventory.find({
             storeId: storeId,
@@ -44,6 +45,7 @@ export class ExportNoteService {
         }
         return inventories;
     }
+
     async createExportNote(db: Services, totalQuantity: number, data: any, userId: number) {
         const newExportNote = new ExportNote();
         newExportNote.fromStoreId = data.fromStoreId;
@@ -52,6 +54,7 @@ export class ExportNoteService {
         newExportNote.status = "pending";
         newExportNote.note = data.note;
         newExportNote.createrId = userId;
+        newExportNote.type = "xuat";
         await db.em.persistAndFlush(newExportNote);
         return newExportNote;
     }
@@ -81,6 +84,52 @@ export class ExportNoteService {
             }
         }
         return {totalQuantity, inventoryMap};
+    }
+    async updateInventoryForImport(db:Services,exportNote: ExportNote,exportDetails: ExportNoteDetail[]) {
+        const productIds=exportDetails.map(product => product.productId);
+        const existInventories = await db.inventory.find({
+            storeId:exportNote.toStoreId,
+            productId:{$in:productIds}
+        });
+        const inventoryMap = new Map(existInventories.map(inv=>[inv.productId,inv]));
+        const inventoryUpdates=exportDetails.map(item=>{
+            let inventory=inventoryMap.get(item.productId);
+            if(!inventory){
+                inventory=db.inventory.create({
+                    storeId:exportNote.toStoreId,
+                    productId:item.productId,
+                    quantity:item.quantity,
+                });
+            } else{
+                inventory.quantity+=item.quantity;
+            }
+            return inventory;
+        })
+        await db.em.persistAndFlush(inventoryUpdates);
+    }
+    async aprroveImportNote(userId:number, data: {
+        exportNoteId: number,
+    }) {
+        const db = await initORM()
+        const exportNote = await db.exportNote.findOneOrFail(data.exportNoteId);
+        const exportNoteDetail = await db.exportNoteDetail.find({
+            exportNoteId: data.exportNoteId
+        });
+        await this.updateInventoryForImport(db, exportNote, exportNoteDetail);
+        db.em.assign(exportNote, {
+            status: "completed"
+        });
+        const newImportNote = new ExportNote();
+        newImportNote.fromStoreId = exportNote.fromStoreId;
+        newImportNote.toStoreId = exportNote.toStoreId;
+        newImportNote.createrId = userId;
+        newImportNote.totalQuantity = exportNote.totalQuantity;
+        newImportNote.status = "completed";
+        newImportNote.type = "nhap";
+        await db.em.persistAndFlush(newImportNote);
+        return{
+            newImportNote
+        }
     }
 
 }
