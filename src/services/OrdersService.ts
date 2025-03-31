@@ -217,11 +217,22 @@ export class OrdersService {
             } as any;
         })
     }
-    async getAllOrder(page:number=1,limit:number) {
+    async getAllOrder(page:number=1,limit:number=10) {
         const db=await initORM();
         const offset=(page - 1) * limit;
+        const [order,total]=await db.orders.findAndCount({},{
+            limit,
+            offset,
+            orderBy:{createdAt:'DESC'}
+        });
+        return{
+            order,
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit)
+        }
 
-        return db.orders.findAll();
     }
 
 }

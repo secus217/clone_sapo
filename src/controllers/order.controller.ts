@@ -116,7 +116,7 @@ const orderController = new Elysia()
                 }
             )
             .get("/get-all-order", async ({query, ordersService}) => {
-                    return await ordersService.getOrderByCustomerId(query.customerId)
+                    return await ordersService.getAllOrder(query.page,query.limit);
                 }, {
                     detail: {
                         tags: ["Manage order"],
@@ -124,7 +124,8 @@ const orderController = new Elysia()
                         description:"Get order by customer id"
                     },
                     query: t.Object({
-                        customerId:t.Number()
+                        page:t.Optional(t.Number()),
+                        limit:t.Optional(t.Number())
                     })
                 }
             )
