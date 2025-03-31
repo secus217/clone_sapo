@@ -19,6 +19,6 @@ export default class ReceiptNote extends BaseEntity {
     note?: string;
     @Property({default: 'completed'})
     status!: 'completed' | 'cancelled';
-    @Property()
+    @Property({nullable: true})
     type?: "THU" | "CHI";
 }

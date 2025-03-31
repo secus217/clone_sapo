@@ -84,7 +84,8 @@ export class OrdersService {
                 createrId: createrId,
                 totalAmount: totalAmount,
                 paymentMethod: data.paymentMethod,
-                status: "completed"
+                status: "completed",
+                type:"THU"
             });
 
 
@@ -216,10 +217,12 @@ export class OrdersService {
             } as any;
         })
     }
-    // async getAllOrder(page:number=1,limit:number,search) {
-    //     const db=await initORM();
-    //     return db.orders.findAll();
-    // }
+    async getAllOrder(page:number=1,limit:number) {
+        const db=await initORM();
+        const offset=(page - 1) * limit;
+
+        return db.orders.findAll();
+    }
 
 }
 
