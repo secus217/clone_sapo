@@ -1,7 +1,7 @@
 import {initORM, Services} from "../db"
 import {Elysia} from "elysia"
 import {ExportNote, ExportNoteDetail} from "../entities/index";
-import {QueryOrder} from "@mikro-orm/core";
+import {Product, Store} from "../entities";
 
 export class ExportNoteService {
     async createNewExportNote(userId: number, data: {
@@ -85,29 +85,31 @@ export class ExportNoteService {
         }
         return {totalQuantity, inventoryMap};
     }
-    async updateInventoryForImport(db:Services,exportNote: ExportNote,exportDetails: ExportNoteDetail[]) {
-        const productIds=exportDetails.map(product => product.productId);
+
+    async updateInventoryForImport(db: Services, exportNote: ExportNote, exportDetails: ExportNoteDetail[]) {
+        const productIds = exportDetails.map(product => product.productId);
         const existInventories = await db.inventory.find({
-            storeId:exportNote.toStoreId,
-            productId:{$in:productIds}
+            storeId: exportNote.toStoreId,
+            productId: {$in: productIds}
         });
-        const inventoryMap = new Map(existInventories.map(inv=>[inv.productId,inv]));
-        const inventoryUpdates=exportDetails.map(item=>{
-            let inventory=inventoryMap.get(item.productId);
-            if(!inventory){
-                inventory=db.inventory.create({
-                    storeId:exportNote.toStoreId,
-                    productId:item.productId,
-                    quantity:item.quantity,
+        const inventoryMap = new Map(existInventories.map(inv => [inv.productId, inv]));
+        const inventoryUpdates = exportDetails.map(item => {
+            let inventory = inventoryMap.get(item.productId);
+            if (!inventory) {
+                inventory = db.inventory.create({
+                    storeId: exportNote.toStoreId,
+                    productId: item.productId,
+                    quantity: item.quantity,
                 });
-            } else{
-                inventory.quantity+=item.quantity;
+            } else {
+                inventory.quantity += item.quantity;
             }
             return inventory;
         })
         await db.em.persistAndFlush(inventoryUpdates);
     }
-    async aprroveImportNote(userId:number, data: {
+
+    async aprroveImportNote(userId: number, data: {
         exportNoteId: number,
     }) {
         const db = await initORM()
@@ -127,46 +129,82 @@ export class ExportNoteService {
         newImportNote.status = "completed";
         newImportNote.type = "nhap";
         await db.em.persistAndFlush(newImportNote);
-        return{
+        const importDetails = exportNoteDetail.map(detail => {
+            return db.em.create(ExportNoteDetail, {
+                exportNoteId: newImportNote.id,
+                productId: detail.productId,
+                quantity: detail.quantity,
+            });
+        });
+        await db.em.persistAndFlush(importDetails);
+        return {
             newImportNote
         }
     }
-    async getListExportNote(page:number=1,limit:number=10,filter:{
-        storeId?:number
+
+    async getListExportNote(page: number = 1, limit: number = 10, filter: {
+        storeId?: number
     }) {
-        const db=await initORM();
-        const offset:number = (page-1)*limit;
-        const where:any={};
-        if(filter.storeId){
-            where.storeId=filter.storeId;
+        const db = await initORM();
+        const offset: number = (page - 1) * limit;
+        let where: any = {};
+        if (filter.storeId) {
+            where = {
+                $or: [
+                    {fromStoreId: filter.storeId},
+                    {toStoreId: filter.storeId}
+                ]
+            };
         }
-        return await db.exportNote.find(where, {
+        const exportNotes = await db.exportNote.find(where, {
             limit,
-            offset,
-            orderBy: {id: QueryOrder.ASC}
+            offset
         });
+        const fromStoreIds = exportNotes.map(item => item.fromStoreId).filter((id): id is number => id !== undefined);
+        const toStoreIds = exportNotes.map(item => item.toStoreId).filter((id): id is number => id !== undefined);
+        const fromStores = await db.store.find({
+            id: {$in: fromStoreIds}
+        })
+        const toStores = await db.store.find({
+            id: {$in: toStoreIds}
+        });
+        const fromStoreMap = new Map(fromStores.map(from => [from.id, from]));
+        const toStoreMap = new Map(toStores.map(to => [to.id, to]));
+        return exportNotes.map(item => {
+            const fromStore = item.fromStoreId !== undefined ? fromStoreMap.get(item.fromStoreId) : undefined;
+            const toStore = item.toStoreId !== undefined ? toStoreMap.get(item.toStoreId) : undefined;
+            return {
+                ...item,
+                fromStore: fromStore,
+                toStore: toStore,
+            } as any
+        })
     }
-    async getExportNoteDetail(exportNoteId:number) {
-        const db=await initORM();
-        const exportNote=db.exportNote.findOneOrFail({
-            id:exportNoteId
+
+
+
+
+    async getExportNoteDetail(exportNoteId: number) {
+        const db = await initORM();
+        const exportNote = db.exportNote.findOneOrFail({
+            id: exportNoteId
         });
-        const exportNoteDetails=await db.exportNoteDetail.find({
+        const exportNoteDetails = await db.exportNoteDetail.find({
             exportNoteId: exportNoteId
         });
-        const productIds=exportNoteDetails.map(item=>item.productId);
-        const products=await db.product.find({
-            id:{$in:productIds}
+        const productIds = exportNoteDetails.map(item => item.productId);
+        const products = await db.product.find({
+            id: {$in: productIds}
         });
-        const productMap=new Map(products.map(product=>[product.id,product]));
-        const exportNoteDetailWithProduct=exportNoteDetails.map(detail=>{
-            const product=productMap.get(detail.productId);
-            return{
+        const productMap = new Map(products.map(product => [product.id, product]));
+        const exportNoteDetailWithProduct = exportNoteDetails.map(detail => {
+            const product = productMap.get(detail.productId);
+            return {
                 ...detail,
                 product
             }
         });
-        return{
+        return {
             exportNote,
             exportNoteDetailWithProduct
         } as any

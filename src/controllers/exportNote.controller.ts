@@ -35,13 +35,13 @@ const exportNoteController = new Elysia()
                     exportNoteId: t.Number()
                 })
             })
-            .get("/get-all-export-note", async ({ query, exportNoteService}) => {
-                const page=query.page?parseInt(query.page):1;
-                const limit=query.limit?parseInt(query.limit):10;
-                const filter= {
-                    storeId:query.storeId
+            .get("/get-all-export-note", async ({query, exportNoteService}) => {
+                const page = query.page ? parseInt(query.page) : 1;
+                const limit = query.limit ? parseInt(query.limit) : 10;
+                const filter = {
+                    storeId: query.storeId
                 };
-                return await exportNoteService.getListExportNote(page,limit,filter);
+                return await exportNoteService.getListExportNote(page, limit, filter);
             }, {
                 detail: {
                     tags: ["Export note"],
@@ -49,11 +49,11 @@ const exportNoteController = new Elysia()
                 },
                 query: t.Object({
                     page: t.Optional(t.String()),
-                    limit:t.Optional(t.String()),
-                    storeId:t.Optional(t.Number())
+                    limit: t.Optional(t.String()),
+                    storeId: t.Optional(t.Number())
                 })
             })
-            .get("/get-export-note-detail-by-id", async ({ query, exportNoteService}) => {
+            .get("/get-export-note-detail-by-id", async ({query, exportNoteService}) => {
 
                 return await exportNoteService.getExportNoteDetail(query.exportNoteId);
             }, {
@@ -62,9 +62,8 @@ const exportNoteController = new Elysia()
                     security: [{JwtAuth: []}]
                 },
                 query: t.Object({
-                    exportNoteId:t.Number()
+                    exportNoteId: t.Number()
                 })
             })
-
     )
 export default exportNoteController;
