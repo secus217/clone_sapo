@@ -19,4 +19,6 @@ export default class ExportNote extends BaseEntity{
     note?: string;
     @Property({nullable:true})
     type?:"xuat"|"nhap"
+    @Property({nullable:true})
+    exportNoteDetailId?: number;
 }
