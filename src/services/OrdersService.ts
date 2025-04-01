@@ -124,6 +124,18 @@ export class OrdersService {
     async getOrderDetail(orderId: number) {
         const db = await initORM();
         const order = await db.orders.findOneOrFail({id: orderId}, {populate: ["orderDetails"]});
+        const customer = await db.user.findOneOrFail({
+            id: order.customerId,
+        }, {
+            fields: ["id", "username", "address", "phone", "role", "createdAt", "updatedAt"]
+        })
+        const creater = await db.user.findOneOrFail({
+                id: order.createrId
+            },
+            {
+                fields: ["id", "username", "address", "phone", "role", "createdAt", "updatedAt"]
+            }
+        );
         if (order.orderDetails) {
             const productIds = order.orderDetails.map(item => item.productId);
             const products = await db.product.find({
@@ -142,7 +154,9 @@ export class OrdersService {
             return {
                 order: {
                     ...orderWithoutDetails,
-                    orderDetails: orderDetailsWithProducts
+                    orderDetails: orderDetailsWithProducts,
+                    customer: customer,
+                    creater: creater
                 } as any
             }
         }
@@ -278,20 +292,20 @@ export class OrdersService {
         }
 
         try {
-            const [order, total] = await db.orders.findAndCount(where,{
+            const [order, total] = await db.orders.findAndCount(where, {
                 limit,
                 offset,
                 orderBy: {id: QueryOrder.ASC},
                 populate: ["orderDetails"]
             })
-            const storeIds=order.map(item=>item.storeId);
-            const stores=await db.store.find({
-                id:{$in: storeIds},
+            const storeIds = order.map(item => item.storeId);
+            const stores = await db.store.find({
+                id: {$in: storeIds},
             });
-            const storeMap=new Map(stores.map(store=>[store.id, store]));
-            const orderWithStore=order.map(order=>{
-                const storeInfo=storeMap.get(order.storeId);
-                return{
+            const storeMap = new Map(stores.map(store => [store.id, store]));
+            const orderWithStore = order.map(order => {
+                const storeInfo = storeMap.get(order.storeId);
+                return {
                     ...order,
                     storeInfo
                 }
@@ -310,7 +324,8 @@ export class OrdersService {
         }
 
     }
-    async updateOrder(orderId:number,data:{
+
+    async updateOrder(orderId: number, data: {
         storeId?: number,
         createrId?: number,
         quantity?: number,
@@ -320,7 +335,7 @@ export class OrdersService {
         orderStatus?: 'completed' | 'cancelled' | 'pending',
         shippingStatus?: 'processing' | 'completed' | 'cancelled',
         customerId?: number
-    }){
+    }) {
         const db = await initORM();
         try {
             const order = await db.orders.findOneOrFail({id: orderId});
