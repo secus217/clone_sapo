@@ -5,8 +5,8 @@ import Orders from "../entities/Orders";
 @Entity()
 export default class OrderDetail extends BaseEntity{
 
-    @Property()
-    orderId!: number;
+    @ManyToOne()
+    order!: Orders;
     @Property({nullable: true})
     productId!: number;
     @Property()

@@ -1,6 +1,8 @@
 import {initORM} from "../db"
 import {Elysia} from "elysia"
 import {ExportNote, ExportNoteDetail, OrderDetail, Orders, ReceiptNote} from "../entities/index";
+import * as wasi from "node:wasi";
+import {QueryOrder} from "@mikro-orm/core";
 
 export class OrdersService {
     async createOrder(data: {
@@ -13,7 +15,7 @@ export class OrdersService {
                           customerId?: number,
                           paymentStatus: 'pending' | 'paid',
 
-                      },createrId: number
+                      }, createrId: number
     ) {
         const db = await initORM();
         const em = db.em.fork();
@@ -21,7 +23,10 @@ export class OrdersService {
         try {
             await em.begin();
             for (const product of data.items) {
-                const inventory = await db.inventory.findOne({storeId: data.fromStoreId, productId: product.productId});
+                const inventory = await db.inventory.findOneOrFail({
+                    storeId: data.fromStoreId,
+                    productId: product.productId
+                });
                 if (!inventory) {
                     throw new Error(`Inventory not found for product ${product.productId} in store`);
                 }
@@ -51,7 +56,7 @@ export class OrdersService {
 
             const orderDetails = data.items.map(item =>
                 em.create(OrderDetail, {
-                    orderId: order.id,
+                    order: order.id,
                     productId: item.productId,
                     quantity: item.quantity,
                     unitPrice: item.unitPrice,
@@ -63,7 +68,7 @@ export class OrdersService {
                 orderId: order.id,
                 fromStoreId: data.fromStoreId,
                 createrId: createrId,
-                toStoreId:null,
+                toStoreId: null,
                 totalQuantity: totalQuantity,
                 status: "completed"
             });
@@ -85,7 +90,7 @@ export class OrdersService {
                 totalAmount: totalAmount,
                 paymentMethod: data.paymentMethod,
                 status: "completed",
-                type:"THU"
+                type: "THU"
             });
 
 
@@ -118,14 +123,31 @@ export class OrdersService {
 
     async getOrderDetail(orderId: number) {
         const db = await initORM();
-        const order = await db.orders.findOne({id: orderId});
-        if (!order) {
-            throw new Error("Order not found");
+        const order = await db.orders.findOneOrFail({id: orderId}, {populate: ["orderDetails"]});
+        if (order.orderDetails) {
+            const productIds = order.orderDetails.map(item => item.productId);
+            const products = await db.product.find({
+                id: {$in: productIds}
+            })
+            const productMap = new Map(products.map(product => [product.id, product]));
+            const orderDetailsWithProducts = order.orderDetails.map(({order, ...detail}) => {
+                const product = productMap.get(detail.productId);
+                return {
+                    ...detail,
+                    product: product || null
+                };
+            });
+            const {orderDetails, ...orderWithoutDetails} = order;
+
+            return {
+                order: {
+                    ...orderWithoutDetails,
+                    orderDetails: orderDetailsWithProducts
+                } as any
+            }
         }
-        const orderDetail = await db.orderDetail.find({orderId: orderId});
         return {
-            order,
-            orderDetail
+            data: []
         }
     }
 
@@ -162,113 +184,167 @@ export class OrdersService {
 
     async deleteOrder(orderId: number) {
         const db = await initORM();
-        const order = await db.orders.findOne({id: orderId});
-        if (!order) {
-            throw new Error("Order not found");
-        }
-        await db.em.nativeDelete(OrderDetail, {orderId: orderId});
-        await db.em.removeAndFlush(order);
-        return {
-            message: "Order deleted successfully",
-        }
-    }
-    async getOrderByProductId(productId: number) {
-        const db = await initORM();
-        const orderdetail=await db.orderDetail.find({productId: productId});
-        if(!orderdetail) {
-            throw new Error("Order not found");
-        }
-        const orderIds=orderdetail.map(order => order.orderId);
-        const orders=await db.orders.find({
-            id:{$in: orderIds}
-        })
-        const orderWithDetails:any=orders.map(order=>{
-            const detailForOrder=orderdetail.filter(detail=>detail.orderId===order.id);
+        try {
+            const order = await db.orders.findOneOrFail({id: orderId});
+            await db.orders.nativeDelete(order);
             return {
-                ...order,
-                orderDetail:detailForOrder
+                success: true,
+                message: `Order with ID ${orderId} has been deleted successfully.`,
+            };
+        } catch (error: any) {
+            return {
+                success: false,
+                message: `Error deleting order: ${error.message}`,
+            };
+        }
+    }
+
+    async getOrderByProductId(page: number = 1, limit: number = 1, productId: number) {
+        try {
+            const db = await initORM();
+            const offset = (page - 1) * limit;
+            const options = {
+                limit,
+                offset,
+                orderBy: {id: QueryOrder.ASC}
             }
-        });
-        return {
-            orders:orderWithDetails
+            const [order, total] = await db.orders.findAndCount({
+                    orderDetails: {
+                        productId: productId
+                    },
+                },
+                options
+            );
+            const totalPages = Math.ceil(total / limit);
+            return {
+                data: order,
+                currentPage: page,
+                itemsPerPage: limit,
+                totalItems: total,
+                totalPages,
+                hasNextPage: page < totalPages,
+                hastPreviousPage: page > 1
+            }
+        } catch (e: any) {
+            throw new Error(e.message);
         }
 
 
     }
-    async getOrderByCustomerId(customerId: number) {
-        const db = await initORM();
-        const order=await  db.orders.find({customerId:customerId});
-        if(!order) {
-            throw new Error("Order not found");
+
+    async getOrderByCustomerId(page: number = 1, limit: number = 1, customerId: number) {
+        try {
+            const db = await initORM();
+            const offset = (page - 1) * limit;
+            const [order, total] = await db.orders.findAndCount({
+                    customerId: customerId,
+                },
+                {
+                    limit,
+                    offset,
+                    orderBy: {id: QueryOrder.ASC},
+                    populate: ['orderDetails']
+                },
+            );
+            const totalPages = Math.ceil(total / limit);
+            return {
+                data: order,
+                currentPage: page,
+                itemsPerPage: limit,
+                totalItems: total,
+                totalPages,
+                hasNextPage: page < totalPages,
+                hastPreviousPage: page > 1
+            }
+        } catch (e: any) {
+            throw new Error(e.message);
         }
-        const orderIds=order.map(order => order.id);
-        const orderDetaills= await db.orderDetail.find({
-            orderId:{$in: orderIds}
-        });
-        const totalAmount=order.reduce((sum,currentOrder)=>{
-            return sum + currentOrder.totalAmount;
-        },0);
-        return order.map(item=>{
-            const orderDetailItem=orderDetaills.find(orDetail=>orDetail.orderId===item.id)
-            return{
-                ...item,
-                orderDetailItem,
-                totalExpense:totalAmount
-            } as any;
-        })
     }
-    async getAllOrder(page:number=1,limit:number=10,filters: {
+
+    async getAllOrder(page: number = 1, limit: number = 10, filters: {
         productId?: number,
         storeId?: number
     } = {}) {
-        const db=await initORM();
-        const offset=(page - 1) * limit;
-        const whereCondition: any = {};
+        const db = await initORM();
+        const offset = (page - 1) * limit;
+        const where: any = {};
         if (filters.productId) {
-            whereCondition['orderDetails'] = {
+            where.orderDetails = {
                 productId: filters.productId
-            };
+            }
         }
         if (filters.storeId) {
-            whereCondition['storeId'] = filters.storeId;
+            where.storeId = filters.storeId;
         }
-        const [orders,total]=await db.orders.findAndCount(whereCondition,{
-            limit,
-            offset,
-            orderBy:{createdAt:'DESC'}
-        });
-        const orderWithUsers = await Promise.all(orders.map(async (order) => {
-            const [creater, customer] = await Promise.all([
-                db.user.findOne({ id: order.createrId }).then(user => {
-                    if (user) {
-                        const { password, ...userWithoutPassword } = user;
-                        return userWithoutPassword;
-                    }
-                    return null;
-                }),
-                db.user.findOne({ id: order.customerId }).then(user => {
-                    if (user) {
-                        const { password, ...userWithoutPassword } = user;
-                        return userWithoutPassword;
-                    }
-                    return null;
-                })
-            ]);
 
+        try {
+            const [order, total] = await db.orders.findAndCount(where,{
+                limit,
+                offset,
+                orderBy: {id: QueryOrder.ASC},
+                populate: ["orderDetails"]
+            })
+            const storeIds=order.map(item=>item.storeId);
+            const stores=await db.store.find({
+                id:{$in: storeIds},
+            });
+            const storeMap=new Map(stores.map(store=>[store.id, store]));
+            const orderWithStore=order.map(order=>{
+                const storeInfo=storeMap.get(order.storeId);
+                return{
+                    ...order,
+                    storeInfo
+                }
+            })
+            const totalPages = Math.ceil(total / limit);
             return {
-                ...order,
-                creater,
-                customer
-            };
-        }));
-        return{
-            orders:orderWithUsers,
-            total,
-            page,
-            limit,
-            totalPages: Math.ceil(total / limit)
-        } as any
+                success: true,
+                data: orderWithStore,
+                currentPage: page,
+                itemsPerPage: limit,
+                totalItems: total,
+                hasNextPage: page < totalPages
+            } as any
+        } catch (e: any) {
+            throw new Error(e.message);
+        }
 
+    }
+    async updateOrder(orderId:number,data:{
+        storeId?: number,
+        createrId?: number,
+        quantity?: number,
+        totalAmount?: number,
+        paymentMethod?: 'cash' | 'bank',
+        paymentStatus?: 'pending' | 'paid',
+        orderStatus?: 'completed' | 'cancelled' | 'pending',
+        shippingStatus?: 'processing' | 'completed' | 'cancelled',
+        customerId?: number
+    }){
+        const db = await initORM();
+        try {
+            const order = await db.orders.findOneOrFail({id: orderId});
+
+            if (data.storeId !== undefined) order.storeId = data.storeId;
+            if (data.createrId !== undefined) order.createrId = data.createrId;
+            if (data.quantity !== undefined) order.quantity = data.quantity;
+            if (data.totalAmount !== undefined) order.totalAmount = data.totalAmount;
+            if (data.paymentMethod) order.paymentMethod = data.paymentMethod;
+            if (data.paymentStatus) order.paymentStatus = data.paymentStatus;
+            if (data.orderStatus) order.orderStatus = data.orderStatus;
+            if (data.shippingStatus) order.shippingStatus = data.shippingStatus;
+            if (data.customerId !== undefined) order.customerId = data.customerId;
+            await db.em.persistAndFlush(order);
+            return {
+                success: true,
+                message: 'Order updated successfully',
+                order,
+            };
+        } catch (error: any) {
+            throw new Error(`Error updating order: ${error.message}`);
+        } finally {
+            db.em.clear();
+        }
     }
 
 }

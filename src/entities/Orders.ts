@@ -1,6 +1,6 @@
 import { Entity, Property, PrimaryKey, ManyToOne, OneToMany, Collection, ManyToMany } from '@mikro-orm/core';
 import {BaseEntity} from "./BaseEntity";
-import {OrderDetail} from "./index";
+import OrderDetail from "../entities/OrderDetail";
 
 @Entity()
 export default class Orders extends BaseEntity{
@@ -22,4 +22,6 @@ export default class Orders extends BaseEntity{
     shippingStatus?:  "processing" | "completed" |'cancelled' ;
     @Property({nullable: true})
     customerId?: number;
+    @OneToMany(()=>OrderDetail,detail=>detail.order)
+    orderDetails?:OrderDetail[];
 }

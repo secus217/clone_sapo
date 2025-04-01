@@ -1,7 +1,7 @@
 import {initORM, Services} from "../db"
 import {Elysia} from "elysia"
-import {Orders, ExportNote, OrderDetail, ExportNoteDetail, ReceiptNote, Product, Inventory} from "../entities/index";
-import {QueryOrder, wrap} from "@mikro-orm/core";
+import {ExportNote, ExportNoteDetail} from "../entities/index";
+import {QueryOrder} from "@mikro-orm/core";
 
 export class ExportNoteService {
     async createNewExportNote(userId: number, data: {
@@ -131,7 +131,46 @@ export class ExportNoteService {
             newImportNote
         }
     }
-
+    async getListExportNote(page:number=1,limit:number=10,filter:{
+        storeId?:number
+    }) {
+        const db=await initORM();
+        const offset:number = (page-1)*limit;
+        const where:any={};
+        if(filter.storeId){
+            where.storeId=filter.storeId;
+        }
+        return await db.exportNote.find(where, {
+            limit,
+            offset,
+            orderBy: {id: QueryOrder.ASC}
+        });
+    }
+    async getExportNoteDetail(exportNoteId:number) {
+        const db=await initORM();
+        const exportNote=db.exportNote.findOneOrFail({
+            id:exportNoteId
+        });
+        const exportNoteDetails=await db.exportNoteDetail.find({
+            exportNoteId: exportNoteId
+        });
+        const productIds=exportNoteDetails.map(item=>item.productId);
+        const products=await db.product.find({
+            id:{$in:productIds}
+        });
+        const productMap=new Map(products.map(product=>[product.id,product]));
+        const exportNoteDetailWithProduct=exportNoteDetails.map(detail=>{
+            const product=productMap.get(detail.productId);
+            return{
+                ...detail,
+                product
+            }
+        });
+        return{
+            exportNote,
+            exportNoteDetailWithProduct
+        } as any
+    }
 }
 
 export default new Elysia().decorate("exportNoteService", new ExportNoteService())
