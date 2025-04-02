@@ -18,7 +18,9 @@ export const isAuthenticated = (
             throw new Error("Token is invalid");
         }
         const userInDb = await em.findOne(User, {
-            id: user.id
+            id: user.id,
+            role: user.role,
+            storeId: user.storeId
         });
         if (!userInDb) {
             throw new Error("User not found");

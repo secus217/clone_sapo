@@ -17,15 +17,17 @@ const authMacro = new Elysia()
           const jwtToken = token.split(" ")[1]
           const decoded = jwt.verify(jwtToken, process.env.JWT_SECRET ?? "") as {
             id: number,
-            role: string
+            role: string,
+            storeId: number
           }
           const user = {
             id: decoded.id,
-            role: decoded.role
+            role: decoded.role,
+            storeId: decoded.storeId
           }
-          if (!roles.includes(user.role)) {
-            throw new Error('Permission denied')
-          }
+          // if (!roles.includes(user.role)) {
+          //   throw new Error('Permission denied')
+          // }
           return {user}
         }
       }
