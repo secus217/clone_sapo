@@ -143,7 +143,8 @@ export class ExportNoteService {
     }
 
     async getListExportNote(page: number = 1, limit: number = 10, filter: {
-        storeId?: number
+        storeId?: number,
+        type?: "xuat"|"nhap"
     }) {
         const db = await initORM();
         const offset: number = (page - 1) * limit;
@@ -156,10 +157,22 @@ export class ExportNoteService {
                 ]
             };
         }
+        if(filter.type){
+            where.type=filter.type;
+        }
         const exportNotes = await db.exportNote.find(where, {
             limit,
             offset
         });
+        const exportNoteIds= exportNotes.map(item => item.id);
+        const exportDetails = await db.exportNoteDetail.find({
+            exportNoteId:{$in: exportNoteIds}
+        });
+        const productIds = exportDetails.map(detail => detail.productId);
+        const products=await db.product.find({
+            id:{$in: productIds}
+        })
+        const productMap=new Map(products.map(item => [item.id,item]));
         const fromStoreIds = exportNotes.map(item => item.fromStoreId).filter((id): id is number => id !== undefined);
         const toStoreIds = exportNotes.map(item => item.toStoreId).filter((id): id is number => id !== undefined);
         const fromStores = await db.store.find({
@@ -170,13 +183,23 @@ export class ExportNoteService {
         });
         const fromStoreMap = new Map(fromStores.map(from => [from.id, from]));
         const toStoreMap = new Map(toStores.map(to => [to.id, to]));
+        const exportNoteWithProduct=(exportDetails.map(detail => {
+            const product=productMap.get(detail.productId);
+            return{
+                ...detail,
+                product
+            }
+        }))
         return exportNotes.map(item => {
             const fromStore = item.fromStoreId !== undefined ? fromStoreMap.get(item.fromStoreId) : undefined;
             const toStore = item.toStoreId !== undefined ? toStoreMap.get(item.toStoreId) : undefined;
             return {
-                ...item,
-                fromStore: fromStore,
-                toStore: toStore,
+                exportDetails:{
+                    ...item,
+                    fromStore: fromStore,
+                    toStore: toStore,
+                    exportNoteWithProduct
+                }
             } as any
         })
     }

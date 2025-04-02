@@ -39,7 +39,8 @@ const exportNoteController = new Elysia()
                 const page = query.page ? parseInt(query.page) : 1;
                 const limit = query.limit ? parseInt(query.limit) : 10;
                 const filter = {
-                    storeId: query.storeId
+                    storeId: query.storeId,
+                    type:query.type
                 };
                 return await exportNoteService.getListExportNote(page, limit, filter);
             }, {
@@ -50,7 +51,11 @@ const exportNoteController = new Elysia()
                 query: t.Object({
                     page: t.Optional(t.String()),
                     limit: t.Optional(t.String()),
-                    storeId: t.Optional(t.Number())
+                    storeId: t.Optional(t.Number()),
+                    type:t.Optional(t.Union([
+                        t.Literal("nhap"),
+                        t.Literal("xuat")
+                    ]))
                 })
             })
             .get("/get-export-note-detail-by-id", async ({query, exportNoteService}) => {
