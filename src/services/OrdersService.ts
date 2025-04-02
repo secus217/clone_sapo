@@ -12,7 +12,7 @@ export class OrdersService {
                               quantity: number;
                               unitPrice: number;
                           }>,
-                          customerId?: number,
+                          customerId: number,
                           paymentStatus: 'pending' | 'paid',
 
                       }, createrId: number
@@ -71,7 +71,7 @@ export class OrdersService {
                 toStoreId: null,
                 totalQuantity: totalQuantity,
                 status: "completed",
-                type:"xuat"
+                type: "xuat"
             });
 
             await em.flush();
@@ -304,12 +304,26 @@ export class OrdersService {
             const stores = await db.store.find({
                 id: {$in: storeIds},
             });
+            const createrIds = order.map(item => item.createrId);
+            const customerIds = order.map(item => item.customerId);
+            const creaters = await db.user.find({
+                id: {$in: createrIds},
+            });
+            const customers = await db.user.find({
+                id: {$in: customerIds},
+            })
+            const createrMap = new Map(creaters.map(creater => [creater.id, creater]));
+            const customerMap = new Map(customers.map(customer => [customer.id, customer]));
             const storeMap = new Map(stores.map(store => [store.id, store]));
             const orderWithStore = order.map(order => {
+                const createrOrder = createrMap.get(order.createrId);
+                const customerOrder = customerMap.get(order.customerId);
                 const storeInfo = storeMap.get(order.storeId);
                 return {
                     ...order,
-                    storeInfo
+                    storeInfo,
+                    creater: createrOrder,
+                    customerOrder: customerOrder
                 }
             })
             const totalPages = Math.ceil(total / limit);

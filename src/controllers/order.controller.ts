@@ -27,7 +27,7 @@ const orderController = new Elysia()
                             unitPrice: t.Number()
                         })
                     ),
-                    customerId: t.Optional(t.Number()),
+                    customerId: t.Number(),
                     paymentStatus: t.Union([
                             t.Literal("pending"),
                             t.Literal("paid")

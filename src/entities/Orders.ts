@@ -6,8 +6,8 @@ import OrderDetail from "../entities/OrderDetail";
 export default class Orders extends BaseEntity{
     @Property()
     storeId!: number;
-    @Property({nullable: true})
-    createrId?: number;
+    @Property()
+    createrId!: number;
     @Property()
     quantity!: number;
     @Property()
@@ -20,8 +20,8 @@ export default class Orders extends BaseEntity{
     orderStatus!: "completed" | "cancelled"|'pending' ;
     @Property({default:"processing"})
     shippingStatus?:  "processing" | "completed" |'cancelled' ;
-    @Property({nullable: true})
-    customerId?: number;
+    @Property()
+    customerId!: number;
     @OneToMany(()=>OrderDetail,detail=>detail.order)
     orderDetails?:OrderDetail[];
     @Property({nullable: true,default:false})
