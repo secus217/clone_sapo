@@ -209,9 +209,15 @@ export class ExportNoteService {
 
     async getExportNoteDetail(exportNoteId: number) {
         const db = await initORM();
-        const exportNote = db.exportNote.findOneOrFail({
+        const exportNote =await db.exportNote.findOneOrFail({
             id: exportNoteId
         });
+        const fromStore=await db.store.findOneOrFail({
+            id: exportNote.fromStoreId
+        })
+        const toStore=await db.store.findOneOrFail({
+            id: exportNote.toStoreId
+        })
         const exportNoteDetails = await db.exportNoteDetail.find({
             exportNoteId: exportNoteId
         });
@@ -224,7 +230,9 @@ export class ExportNoteService {
             const product = productMap.get(detail.productId);
             return {
                 ...detail,
-                product
+                product,
+                fromStore: fromStore,
+                toStore: toStore
             }
         });
         return {

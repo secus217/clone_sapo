@@ -24,4 +24,6 @@ export default class Orders extends BaseEntity{
     customerId?: number;
     @OneToMany(()=>OrderDetail,detail=>detail.order)
     orderDetails?:OrderDetail[];
+    @Property({nullable: true,default:false})
+    isDeleted?: boolean;
 }

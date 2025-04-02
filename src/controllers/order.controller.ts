@@ -161,41 +161,41 @@ const orderController = new Elysia()
                     })
                 }
             )
-            .put("/update-order", async ({ body, ordersService }) => {
-                const { orderId, ...updateData } = body;
-                return await ordersService.updateOrder(orderId, updateData);
-            }, {
-                detail: {
-                    tags: ["Manage order"],
-                    security: [{ JwtAuth: [] }],
-                    description: "Update order"
-                },
-                body: t.Object({
-                    orderId: t.Number(),
-                    storeId: t.Optional(t.Number()),
-                    createrId: t.Optional(t.Number()),
-                    quantity: t.Optional(t.Number()),
-                    totalAmount: t.Optional(t.Number()),
-                    paymentMethod: t.Optional(t.Union([
-                        t.Literal("cash"),
-                        t.Literal("bank")
-                    ])),
-                    paymentStatus: t.Optional(t.Union([
-                        t.Literal("pending"),
-                        t.Literal("paid")
-                    ])),
-                    orderStatus: t.Optional(t.Union([
-                        t.Literal("completed"),
-                        t.Literal("cancelled"),
-                        t.Literal("pending")
-                    ])),
-                    shippingStatus: t.Optional(t.Union([
-                        t.Literal("processing"),
-                        t.Literal("completed"),
-                        t.Literal("cancelled")
-                    ])),
-                    customerId: t.Optional(t.Number()),
-                })
-            })
+            // .put("/update-order", async ({ body, ordersService }) => {
+            //     const { orderId, ...updateData } = body;
+            //     return await ordersService.updateOrder(orderId, updateData);
+            // }, {
+            //     detail: {
+            //         tags: ["Manage order"],
+            //         security: [{ JwtAuth: [] }],
+            //         description: "Update order"
+            //     },
+            //     body: t.Object({
+            //         orderId: t.Number(),
+            //         storeId: t.Optional(t.Number()),
+            //         createrId: t.Optional(t.Number()),
+            //         quantity: t.Optional(t.Number()),
+            //         totalAmount: t.Optional(t.Number()),
+            //         paymentMethod: t.Optional(t.Union([
+            //             t.Literal("cash"),
+            //             t.Literal("bank")
+            //         ])),
+            //         paymentStatus: t.Optional(t.Union([
+            //             t.Literal("pending"),
+            //             t.Literal("paid")
+            //         ])),
+            //         orderStatus: t.Optional(t.Union([
+            //             t.Literal("completed"),
+            //             t.Literal("cancelled"),
+            //             t.Literal("pending")
+            //         ])),
+            //         shippingStatus: t.Optional(t.Union([
+            //             t.Literal("processing"),
+            //             t.Literal("completed"),
+            //             t.Literal("cancelled")
+            //         ])),
+            //         customerId: t.Optional(t.Number()),
+            //     })
+            // })
     )
 export default orderController;

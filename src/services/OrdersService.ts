@@ -70,7 +70,8 @@ export class OrdersService {
                 createrId: createrId,
                 toStoreId: null,
                 totalQuantity: totalQuantity,
-                status: "completed"
+                status: "completed",
+                type:"xuat"
             });
 
             await em.flush();
@@ -200,7 +201,8 @@ export class OrdersService {
         const db = await initORM();
         try {
             const order = await db.orders.findOneOrFail({id: orderId});
-            await db.orders.nativeDelete(order);
+            order.isDeleted = true;
+            await db.em.persistAndFlush(order);
             return {
                 success: true,
                 message: `Order with ID ${orderId} has been deleted successfully.`,
