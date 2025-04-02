@@ -19,7 +19,8 @@ export class ManageUserService {
             data: users.map(user => ({
                 id: user.id,
                 username: user.username,
-                role: user.role
+                role: user.role,
+                storeId: user.storeId,
             })),
             meta: {
                 currentPage: page,
