@@ -103,7 +103,7 @@ const manageUserController = new Elysia()
                 })
             })
             .put("/update-role-for-user", async ({body, manageUserService}) => {
-                return await manageUserService.updateRoleForUser(body.userId, body.role);
+                return await manageUserService.updateRoleForUser(body.userId, body.role,body.storeId);
             }, {
                 detail: {
                     tags: ["Manage user"],
@@ -111,7 +111,8 @@ const manageUserController = new Elysia()
                 },
                 body:t.Object({
                     userId:t.Number(),
-                    role:t.String()
+                    role:t.String(),
+                    storeId:t.Number()
                 })
             })
             .get("/get-all-staff", async ({query, manageUserService}) => {

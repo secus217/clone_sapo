@@ -17,5 +17,7 @@ export default class User extends BaseEntity {
   address?: string ;
   @Property()
   role!: string;
+  @Property({nullable: true})
+  storeId?:number;
 
 }

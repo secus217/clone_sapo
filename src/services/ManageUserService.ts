@@ -128,7 +128,7 @@ export class ManageUserService {
         }
     }
 
-    async updateRoleForUser(userId: number, role: string) {
+    async updateRoleForUser(userId: number, role: string,storeId:number) {
         const db = await initORM();
         const staff = await db.user.findOne({
             id: userId
@@ -137,6 +137,7 @@ export class ManageUserService {
             throw new Error("User not found");
         }
         staff.role = role;
+        staff.storeId=storeId;
         await db.em.persistAndFlush(staff);
         return {
             staff
