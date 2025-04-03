@@ -64,25 +64,6 @@ export class OrdersService {
                 })
             );
 
-            const exportNote = em.create(ExportNote, {
-                orderId: order.id,
-                fromStoreId: data.fromStoreId,
-                createrId: createrId,
-                toStoreId: null,
-                totalQuantity: totalQuantity,
-                status: "completed",
-                type: "xuat"
-            });
-
-            await em.flush();
-
-            const exportNoteDetails = data.items.map(item =>
-                em.create(ExportNoteDetail, {
-                    exportNoteId: exportNote.id,
-                    productId: item.productId,
-                    quantity: item.quantity
-                })
-            );
 
             const receiptNote = em.create(ReceiptNote, {
                 orderId: order.id,
@@ -98,8 +79,6 @@ export class OrdersService {
             await em.persistAndFlush([
                 order,
                 ...orderDetails,
-                exportNote,
-                ...exportNoteDetails,
                 receiptNote
             ]);
 
@@ -109,8 +88,6 @@ export class OrdersService {
             return {
                 order,
                 orderDetails,
-                exportNote,
-                exportNoteDetails,
                 receiptNote
             };
         } catch (e: any) {
