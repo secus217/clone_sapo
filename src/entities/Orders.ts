@@ -23,7 +23,7 @@ export default class Orders extends BaseEntity{
     @Property()
     customerId!: number;
     @OneToMany(()=>OrderDetail,detail=>detail.order)
-    orderDetails?:OrderDetail[];
+    orderDetails!:OrderDetail[];
     @Property({nullable: true,default:false})
     isDeleted?: boolean;
 }

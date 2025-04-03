@@ -39,7 +39,6 @@ export class OrdersService {
 
             const totalQuantity = data.items.reduce((sum, item) => sum + item.quantity, 0);
             const totalAmount = data.items.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
-
             const order = em.create(Orders, {
                 storeId: data.fromStoreId,
                 createrId: createrId,
@@ -50,6 +49,7 @@ export class OrdersService {
                 shippingStatus: "processing",
                 customerId: data.customerId,
                 paymentStatus: data.paymentStatus,
+                orderDetails:[]
             });
 
             await em.flush();
@@ -289,6 +289,11 @@ export class OrdersService {
             const customers = await db.user.find({
                 id: {$in: customerIds},
             })
+            const productIds = order.flatMap(item => item.orderDetails.map(detail => detail.productId));
+            const products = await db.product.find({
+                id: {$in: productIds},
+            });
+            const productMap = new Map(products.map(product => [product.id, product]));
             const createrMap = new Map(creaters.map(creater => [creater.id, creater]));
             const customerMap = new Map(customers.map(customer => [customer.id, customer]));
             const storeMap = new Map(stores.map(store => [store.id, store]));
@@ -296,11 +301,18 @@ export class OrdersService {
                 const createrOrder = createrMap.get(order.createrId);
                 const customerOrder = customerMap.get(order.customerId);
                 const storeInfo = storeMap.get(order.storeId);
+                const orderDetailsWithProducts = order.orderDetails.map(detail => {
+                    const productInfo = productMap.get(detail.productId);
+                    return {
+                        ...detail,
+                        productInfo
+                    };
+                });
                 return {
-                    ...order,
                     storeInfo,
                     creater: createrOrder,
-                    customerOrder: customerOrder
+                    customerOrder: customerOrder,
+                    orderDetails: orderDetailsWithProducts
                 }
             })
             const totalPages = Math.ceil(total / limit);
