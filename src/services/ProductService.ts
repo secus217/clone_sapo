@@ -156,12 +156,15 @@ export class ProductService {
             if (!inventory) {
                 throw new Error(`Product not found`);
             }
-            const productIds = inventory.map(product => product.id);
+            console.log("inventory", inventory);
+            const productIds = inventory.map(product => product.productId);
+            console.log("check productIds",productIds)
             const products = await db.product.find(
                 {
                     id: {$in: productIds}
                 }
             );
+            console.log("products", products);
             return products.map(product => {
                 const inventoryItem=inventory.find(item=>item.productId===product.id);
                 return{
