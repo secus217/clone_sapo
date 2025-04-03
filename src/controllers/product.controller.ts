@@ -71,6 +71,22 @@ const productController = new Elysia()
                     storeId:t.Number()
                 })
             })
+            .get("/get-all-product-of-admin", async ({user,query, productService}) => {
+                if(user.role!=="admin"){
+                    return [];
+                }
+                return await productService.getAllProductForAdmin(query.page,query.limit)
+            }, {
+                detail: {
+                    tags: ["Manage product"],
+                    security: [{JwtAuth: []}],
+                    description:"Get all product by store id"
+                },
+                query: t.Object({
+                    page:t.Optional(t.Number()),
+                    limit:t.Optional(t.Number())
+                })
+            })
 
 
     )

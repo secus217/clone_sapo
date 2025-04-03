@@ -174,6 +174,22 @@ export class ProductService {
             throw new Error(err.message);
         }
     }
+    async getAllProductForAdmin(page:number=1,limit:number=10) {
+        const db = await initORM();
+        const offset=(page-1)*limit;
+        const [products,total]= await db.product.findAndCount({},{
+            limit,
+            offset,
+            populate: ["category"]
+        });
+        const totalPage=Math.ceil(total/limit);
+        return{
+            data:products,
+            page,
+            limit,
+            totalPage
+        }
+    }
 
 }
 
