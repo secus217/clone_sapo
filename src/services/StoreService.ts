@@ -34,6 +34,13 @@ export class StoreService {
             stores
         }
     }
+    async getAllStoresOfAdmin() {
+        const db=await initORM();
+        const stores=await db.store.findAll();
+        return{
+            stores
+        }
+    }
 }
 
 export default new Elysia().decorate("storeService", new StoreService());

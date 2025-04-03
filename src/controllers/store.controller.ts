@@ -30,6 +30,20 @@ const storeController = new Elysia()
                 }
 
             })
+            .post("/get-all-store-of-admin", async ({user, storeService}) => {
+                console.log(user)
+                if(user.role!=="admin"){
+                    return [];
+                }
+                return await storeService.getAllStoresOfAdmin()
+            }, {
+                detail: {
+                    tags: ["Manage store"],
+                    security: [{JwtAuth: []}],
+                }
+
+            })
+
 
     )
 export default storeController;
