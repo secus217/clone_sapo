@@ -73,6 +73,29 @@ export class ReceiptNoteService {
         }
 
     }
+    async getAllReceiptNoteForAdmin(filter:{ storeId?:number },page:number=1,limit:number=10){
+        const db=await initORM();
+        const offset=(page-1)*limit;
+        const where:any={};
+        if(filter.storeId){
+            where.storeId=filter.storeId;
+        }
+        const [receiptNotes,total]=await db.receiptNote.findAndCount(where,{
+            limit,
+            offset
+        });
+        const totalPages=Math.ceil(total/limit);
+        return {
+            data:receiptNotes,
+            meta:{
+                currentPage:page,
+                itemsPerPage:limit,
+                totalItems:total,
+                totalPages:totalPages
+            }
+        }
+
+    }
 
 }
 
