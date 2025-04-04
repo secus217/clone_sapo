@@ -39,3 +39,14 @@ export const isAdmin = () => {
         return { user };
     }
 }
+export const isAdminOrStaff = () => {
+    return async (context: any) => {
+        const { user } = await isAuthenticated()(context);
+
+        if (user.role !== "admin" && user.role !== "staff") {
+            throw new Error("Permission denied: Admin or Staff access required");
+        }
+
+        return { user };
+    }
+}

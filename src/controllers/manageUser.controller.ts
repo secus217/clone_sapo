@@ -1,6 +1,6 @@
 import {Elysia, t} from "elysia";
 import manageUserService from "../services/ManageUserService";
-import {isAuthenticated, isAdmin} from "../middlewares/isAuthenticated"
+import {isAuthenticated, isAdmin,isAdminOrStaff} from "../middlewares/isAuthenticated"
 
 const manageUserController = new Elysia()
     .group("/manage", group =>
@@ -85,23 +85,23 @@ const manageUserController = new Elysia()
                     })
                 }
             )
-            .get("/get-all-customer", async ({query, manageUserService}) => {
-                const page = query.page ? parseInt(query.page) : 1;
-                const limit = query.limit ? parseInt(query.limit) : 10;
-                const search = query.search;
-
-                return await manageUserService.getALLCustomer(page, limit, search);
-            }, {
-                detail: {
-                    tags: ["Manage user"],
-                    security: [{JwtAuth: []}]
-                },
-                query: t.Object({
-                    page: t.Optional(t.String()),
-                    limit: t.Optional(t.String()),
-                    search: t.Optional(t.String())
-                })
-            })
+            // .get("/get-all-customer", async ({query, manageUserService}) => {
+            //     const page = query.page ? parseInt(query.page) : 1;
+            //     const limit = query.limit ? parseInt(query.limit) : 10;
+            //     const search = query.search;
+            //
+            //     return await manageUserService.getALLCustomer(page, limit, search);
+            // }, {
+            //     detail: {
+            //         tags: ["Manage user"],
+            //         security: [{JwtAuth: []}]
+            //     },
+            //     query: t.Object({
+            //         page: t.Optional(t.String()),
+            //         limit: t.Optional(t.String()),
+            //         search: t.Optional(t.String())
+            //     })
+            // })
             .put("/update-role-for-user", async ({body, manageUserService}) => {
                 return await manageUserService.updateRoleForUser(body.userId, body.role,body.storeId);
             }, {
@@ -130,6 +130,29 @@ const manageUserController = new Elysia()
                 })
             })
 
+
+    )
+    .group("/shared", sharedGroup =>
+        sharedGroup
+            .use(manageUserService)
+            .derive(isAdminOrStaff())
+            .get("/get-all-customer", async ({query, manageUserService}) => {
+                const page = query.page ? parseInt(query.page) : 1;
+                const limit = query.limit ? parseInt(query.limit) : 10;
+                const search = query.search;
+
+                return await manageUserService.getALLCustomer(page, limit, search);
+            }, {
+                detail: {
+                    tags: ["Manage user"],
+                    security: [{JwtAuth: []}]
+                },
+                query: t.Object({
+                    page: t.Optional(t.String()),
+                    limit: t.Optional(t.String()),
+                    search: t.Optional(t.String())
+                })
+            })
 
     )
 export default manageUserController;

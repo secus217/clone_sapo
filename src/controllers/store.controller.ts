@@ -1,6 +1,7 @@
 import {Elysia, t} from "elysia";
 import storeService from "../services/StoreService";
-import {isAuthenticated, isAdmin} from "../middlewares/isAuthenticated"
+import {isAuthenticated, isAdmin, isAdminOrStaff} from "../middlewares/isAuthenticated"
+import manageUserService from "../services/ManageUserService";
 
 const storeController = new Elysia()
     .group("/store", group =>
@@ -44,6 +45,21 @@ const storeController = new Elysia()
 
             })
 
+
+    )
+    .group("/shared", sharedGroup =>
+        sharedGroup
+            .use(storeService)
+            .derive(isAdminOrStaff())
+            .post("/get-all-store-of-admin", async ({user, storeService}) => {
+                return await storeService.getAllStoresOfAdmin()
+            }, {
+                detail: {
+                    tags: ["Manage store"],
+                    security: [{JwtAuth: []}],
+                }
+
+            })
 
     )
 export default storeController;
