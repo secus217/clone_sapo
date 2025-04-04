@@ -164,15 +164,6 @@ export class ExportNoteService {
             limit,
             offset
         });
-        const exportNoteIds= exportNotes.map(item => item.id);
-        const exportDetails = await db.exportNoteDetail.find({
-            exportNoteId:{$in: exportNoteIds}
-        });
-        const productIds = exportDetails.map(detail => detail.productId);
-        const products=await db.product.find({
-            id:{$in: productIds}
-        })
-        const productMap=new Map(products.map(item => [item.id,item]));
         const fromStoreIds = exportNotes.map(item => item.fromStoreId).filter((id): id is number => id !== undefined);
         const toStoreIds = exportNotes.map(item => item.toStoreId).filter((id): id is number => id !== undefined);
         const fromStores = await db.store.find({
@@ -183,23 +174,14 @@ export class ExportNoteService {
         });
         const fromStoreMap = new Map(fromStores.map(from => [from.id, from]));
         const toStoreMap = new Map(toStores.map(to => [to.id, to]));
-        const exportNoteWithProduct=(exportDetails.map(detail => {
-            const product=productMap.get(detail.productId);
-            return{
-                ...detail,
-                product
-            }
-        }))
+
         return exportNotes.map(item => {
             const fromStore = item.fromStoreId !== undefined ? fromStoreMap.get(item.fromStoreId) : undefined;
             const toStore = item.toStoreId !== undefined ? toStoreMap.get(item.toStoreId) : undefined;
             return {
-                exportDetails:{
                     ...item,
                     fromStore: fromStore,
                     toStore: toStore,
-                    exportNoteWithProduct
-                }
             } as any
         })
     }

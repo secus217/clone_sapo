@@ -41,18 +41,27 @@ export class ReceiptNoteService {
         };
         const where={storeId:storeId};
         const [receiptNote,total]=await db.receiptNote.findAndCount(where,options);
+        const storeIds=receiptNote.map((item)=>item.storeId);
+        const stores=await db.store.find({
+            id:{$in:storeIds}
+        })
+        const storeMap=new Map(stores.map(item=>[item.id,item]));
         const totalPage=Math.ceil(total/limit);
         return{
-            data:receiptNote.map((note:any)=>({
-                orderId:note.orderId,
-                storeId:note.storeId,
-                createrId:note.createrId,
-                totalAmount:note.totalAmount,
-                paymentMethod:note.paymentMethod,
-                note:note.note,
-                status:note.status,
-                type:note.type,
-            })),
+            data:receiptNote.map((note:any)=>{
+                const store=storeMap.get(note.storeId);
+                return {
+                    orderId:note.orderId,
+                    storeId:note.storeId,
+                    createrId:note.createrId,
+                    totalAmount:note.totalAmount,
+                    paymentMethod:note.paymentMethod,
+                    note:note.note,
+                    status:note.status,
+                    type:note.type,
+                    store
+                }
+            }),
             meta:{
                 currentPage: page,
                 itemsPerPage: limit,
