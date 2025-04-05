@@ -69,22 +69,7 @@ const manageUserController = new Elysia()
                     })
                 }
             )
-            .post("/add-customer", async ({body, manageUserService}) => {
-                    return await manageUserService.addUserWithRoleCustomer(body)
-                },
-                {
-                    detail: {
-                        tags: ["Manage user"],
-                        security: [{JwtAuth: []}]
-                    },
-                    body: t.Object({
-                        username:t.String(),
-                        phone:t.String(),
-                        addresses:t.String()
 
-                    })
-                }
-            )
             // .get("/get-all-customer", async ({query, manageUserService}) => {
             //     const page = query.page ? parseInt(query.page) : 1;
             //     const limit = query.limit ? parseInt(query.limit) : 10;
@@ -153,6 +138,22 @@ const manageUserController = new Elysia()
                     search: t.Optional(t.String())
                 })
             })
+            .post("/add-customer", async ({body, manageUserService}) => {
+                    return await manageUserService.addUserWithRoleCustomer(body)
+                },
+                {
+                    detail: {
+                        tags: ["Manage user"],
+                        security: [{JwtAuth: []}]
+                    },
+                    body: t.Object({
+                        username:t.String(),
+                        phone:t.String(),
+                        addresses:t.String()
+
+                    })
+                }
+            )
 
     )
 export default manageUserController;
