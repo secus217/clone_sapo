@@ -1,6 +1,7 @@
 import {Elysia, t} from "elysia";
 import orderService from "../services/OrdersService";
-import {isAuthenticated, isAdmin} from "../middlewares/isAuthenticated"
+import {isAuthenticated, isAdmin, isAdminOrStaff} from "../middlewares/isAuthenticated"
+import exportNoteService from "../services/ExportNoteService";
 
 const orderController = new Elysia()
     .group("/order", group =>
@@ -125,26 +126,6 @@ const orderController = new Elysia()
                     })
                 }
             )
-            .get("/get-all-order", async ({query, ordersService}) => {
-                    const filter = {
-                        productId: query.productId,
-                        storeId: query.storeId,
-                    }
-                    return await ordersService.getAllOrder(query.page, query.limit, filter);
-                }, {
-                    detail: {
-                        tags: ["Manage order"],
-                        security: [{JwtAuth: []}],
-                        description: "Get all order"
-                    },
-                    query: t.Object({
-                        page: t.Optional(t.Number()),
-                        limit: t.Optional(t.Number()),
-                        productId: t.Optional(t.Number()),
-                        storeId: t.Optional(t.Number())
-                    })
-                }
-            )
             .delete("/delete-order", async ({user,body, ordersService}) => {
                     if(user.role==="staff"){
                         throw new Error("You dont have permission to perform this action.");
@@ -197,5 +178,30 @@ const orderController = new Elysia()
             //         customerId: t.Optional(t.Number()),
             //     })
             // })
+    )
+    .group("/shared", sharedGroup =>
+        sharedGroup
+            .use(orderService)
+            .derive(isAdminOrStaff())
+            .get("/get-all-order", async ({query, ordersService}) => {
+                    const filter = {
+                        productId: query.productId,
+                        storeId: query.storeId,
+                    }
+                    return await ordersService.getAllOrder(query.page, query.limit, filter);
+                }, {
+                    detail: {
+                        tags: ["Manage order"],
+                        security: [{JwtAuth: []}],
+                        description: "Get all order"
+                    },
+                    query: t.Object({
+                        page: t.Optional(t.Number()),
+                        limit: t.Optional(t.Number()),
+                        productId: t.Optional(t.Number()),
+                        storeId: t.Optional(t.Number())
+                    })
+                }
+            )
     )
 export default orderController;

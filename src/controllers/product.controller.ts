@@ -29,17 +29,7 @@ const productController = new Elysia()
                     })
                 })
             })
-            .put("/delete-product", async ({query, productService}) => {
-                return await productService.deleteProduct(query.productId)
-            }, {
-                detail: {
-                    tags: ["Manage product"],
-                    security: [{JwtAuth: []}],
-                },
-                query: t.Object({
-                    productId: t.Number()
-                })
-            })
+
     )
     .group("/shared", sharedGroup =>
         sharedGroup
@@ -91,6 +81,17 @@ const productController = new Elysia()
                 },
                 query: t.Object({
                     storeId: t.Number()
+                })
+            })
+            .put("/delete-product", async ({query, productService}) => {
+                return await productService.deleteProduct(query.productId)
+            }, {
+                detail: {
+                    tags: ["Manage product"],
+                    security: [{JwtAuth: []}],
+                },
+                query: t.Object({
+                    productId: t.Number()
                 })
             })
     )
