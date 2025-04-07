@@ -13,5 +13,4 @@ export default class Store extends BaseEntity {
     phoneNumber!: string;
     @Property()
     email!: string;
-
 }
