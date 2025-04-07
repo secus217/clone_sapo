@@ -9,19 +9,7 @@ const receiptNoteController = new Elysia()
             .use(receiptNoteService)
             .derive(isAdmin())
 
-            .get("get-all-receipt-note", async ({user, query, receiptNoteService}) => {
-                return await receiptNoteService.getAllReceiptNotes(query.storeId,query.page,query.limit)
-            }, {
-                detail: {
-                    tags: ["Receipt note"],
-                    security: [{JwtAuth: []}],
-                },
-                query: t.Object({
-                    storeId: t.Number(),
-                    page:t.Optional(t.Number()),
-                    limit:t.Optional(t.Number())
-                })
-            })
+
             .get("get-all-receipt-note-for-admin", async ({user, query, receiptNoteService}) => {
                 if(user.role!=="admin"){
                     throw new Error("You dont have permission to do this action")
@@ -66,6 +54,19 @@ const receiptNoteController = new Elysia()
                         t.Literal("THU"),
                         t.Literal("CHI")
                     ])
+                })
+            })
+            .get("get-all-receipt-note", async ({user, query, receiptNoteService}) => {
+                return await receiptNoteService.getAllReceiptNotes(query.storeId,query.page,query.limit)
+            }, {
+                detail: {
+                    tags: ["Receipt note"],
+                    security: [{JwtAuth: []}],
+                },
+                query: t.Object({
+                    storeId: t.Number(),
+                    page:t.Optional(t.Number()),
+                    limit:t.Optional(t.Number())
                 })
             })
     )

@@ -8,35 +8,6 @@ const orderController = new Elysia()
         group
             .use(orderService)
             .derive(isAdmin())
-            .post("/create-new-order", async ({user, body, ordersService}) => {
-                return await ordersService.createOrder(body, user.id)
-            }, {
-                detail: {
-                    tags: ["Manage order"],
-                    security: [{JwtAuth: []}],
-                    description: "paymentStatus can only be 'pending' or 'paid'," + "paymentMethod can only be 'cash' or 'bank'"
-                },
-                body: t.Object({
-                    fromStoreId: t.Number(),
-                    paymentMethod: t.Union([
-                        t.Literal("cash"),
-                        t.Literal("bank")
-                    ]),
-                    items: t.Array(t.Object({
-                            productId: t.Number(),
-                            quantity: t.Number(),
-                            unitPrice: t.Number()
-                        })
-                    ),
-                    customerId: t.Number(),
-                    paymentStatus: t.Union([
-                            t.Literal("pending"),
-                            t.Literal("paid")
-                        ]
-                    ),
-
-                })
-            })
             .get("/get-order-detail", async ({query, ordersService}) => {
                     return await ordersService.getOrderDetail(query.orderId)
                 }, {
@@ -203,5 +174,34 @@ const orderController = new Elysia()
                     })
                 }
             )
+            .post("/create-new-order", async ({user, body, ordersService}) => {
+                return await ordersService.createOrder(body, user.id)
+            }, {
+                detail: {
+                    tags: ["Manage order"],
+                    security: [{JwtAuth: []}],
+                    description: "paymentStatus can only be 'pending' or 'paid'," + "paymentMethod can only be 'cash' or 'bank'"
+                },
+                body: t.Object({
+                    fromStoreId: t.Number(),
+                    paymentMethod: t.Union([
+                        t.Literal("cash"),
+                        t.Literal("bank")
+                    ]),
+                    items: t.Array(t.Object({
+                            productId: t.Number(),
+                            quantity: t.Number(),
+                            unitPrice: t.Number()
+                        })
+                    ),
+                    customerId: t.Number(),
+                    paymentStatus: t.Union([
+                            t.Literal("pending"),
+                            t.Literal("paid")
+                        ]
+                    ),
+
+                })
+            })
     )
 export default orderController;
