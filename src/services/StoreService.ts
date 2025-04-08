@@ -41,6 +41,35 @@ export class StoreService {
             stores
         }
     }
+    async getStoreDetails(storeId: number) {
+        const db = await initORM();
+        const store = await db.store.findOneOrFail({ id: storeId });
+        const inventories = await db.inventory.find({
+            storeId: storeId
+        });
+        const productIds = inventories.map(inventory => inventory.productId);
+        const products = await db.product.find({
+            id: { $in: productIds }
+        });
+
+        const productMap = new Map();
+        products.forEach(product => {
+            productMap.set(product.id, product);
+        });
+
+        const inventoriesWithProductDetails = inventories.map(inventory => {
+            const product = productMap.get(inventory.productId);
+            return {
+                ...inventory,
+                product: product
+            };
+        });
+
+        return {
+            store,
+            inventories: inventoriesWithProductDetails
+        }as any;
+    }
 }
 
 export default new Elysia().decorate("storeService", new StoreService());

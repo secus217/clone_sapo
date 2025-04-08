@@ -58,8 +58,17 @@ const storeController = new Elysia()
                     tags: ["Manage store"],
                     security: [{JwtAuth: []}],
                 }
-
             })
-
+            .get("/get-store-detail", async ({query, storeService}) => {
+                return await storeService.getStoreDetails(query.storeId)
+            }, {
+                detail: {
+                    tags: ["Manage store"],
+                    security: [{JwtAuth: []}],
+                },
+                query: t.Object({
+                    storeId:t.Number()
+                })
+            })
     )
 export default storeController;
