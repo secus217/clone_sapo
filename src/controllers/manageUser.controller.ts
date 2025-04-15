@@ -149,7 +149,7 @@ const manageUserController = new Elysia()
                     body: t.Object({
                         username:t.String(),
                         phone:t.String(),
-                        addresses:t.String()
+                        addresses:t.Optional(t.String())
 
                     })
                 }

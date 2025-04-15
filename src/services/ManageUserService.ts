@@ -86,7 +86,7 @@ export class ManageUserService {
         }
     }
 
-    async addUserWithRoleCustomer(data: { username: string, phone: string, addresses: string }) {
+    async addUserWithRoleCustomer(data: { username: string, phone: string, addresses?: string }) {
         const db = await initORM();
         const customer = new User();
         customer.username = data.username;
