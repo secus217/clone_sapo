@@ -356,6 +356,69 @@ export class OrdersService {
             db.em.clear();
         }
     }
+    async getAllRevenue(){
+        const db = await initORM();
+        let revenues=0;
+        const orders=await db.orders.find({
+            paymentStatus:"paid"
+        });
+        orders.map(order => {
+            revenues+=order.totalAmount;
+        });
+        return revenues;
+    }
+    async getAllRevenueByTime(days=7){
+        const db = await initORM();
+        let revenues=0;
+        const startDate = new Date();
+        startDate.setHours(0, 0, 0, 0); // Đặt về đầu ngày hiện tại
+        startDate.setDate(startDate.getDate() - (days - 1)); // Trừ đi (days-1) để bao gồm cả ngày hiện tại
+
+        const endDate = new Date();
+        endDate.setHours(23, 59, 59, 999);
+        const orders = await db.orders.find({
+                paymentStatus: "paid",
+                createdAt: {
+                    $gte: startDate,
+                    $lte: endDate
+                }
+        });
+        orders.forEach(order => {
+            revenues += order.totalAmount;
+        });
+        return revenues;
+    }
+    async getAllNewOrder(){
+        const db = await initORM();
+        const oneDayAgo = new Date();
+        oneDayAgo.setHours(oneDayAgo.getHours() - 24);
+        const [orders,count]=await db.orders.findAndCount({
+            createdAt:{
+                $gte:oneDayAgo
+            }
+        });
+        return {
+            count
+        }
+    }
+    async getPendingOrder(){
+        const db = await initORM();
+        const [orders,count]=await db.orders.findAndCount({
+          orderStatus:"pending"
+        });
+        return {
+            count
+        }
+    }
+    async getCanncelOrder(){
+        const db = await initORM();
+        const [orders,count]=await db.orders.findAndCount({
+            isDeleted:true
+        });
+        return {
+            count
+        }
+    }
 
 }
 

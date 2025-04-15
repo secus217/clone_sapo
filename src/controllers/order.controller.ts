@@ -203,5 +203,54 @@ const orderController = new Elysia()
 
                 })
             })
+            .get("/get-revenues", async ({user, body, ordersService}) => {
+                return await ordersService.getAllRevenue();
+            }, {
+                detail: {
+                    tags: ["Manage order"],
+                    security: [{JwtAuth: []}],
+                    description: "get all revenue"
+                }
+            })
+            .get("/get-count-all-new-order", async ({user, ordersService}) => {
+                return await ordersService.getAllNewOrder();
+            }, {
+                detail: {
+                    tags: ["Manage order"],
+                    security: [{JwtAuth: []}],
+                    description: "count all new order"
+                }
+            })
+
+            .get("/get-count-pending-order", async ({user, ordersService}) => {
+                return await ordersService.getPendingOrder();
+            }, {
+                detail: {
+                    tags: ["Manage order"],
+                    security: [{JwtAuth: []}],
+                    description: "count all pending order"
+                }
+            })
+            .get("/get-count-cancel-order", async ({user, ordersService}) => {
+                return await ordersService.getCanncelOrder();
+            }, {
+                detail: {
+                    tags: ["Manage order"],
+                    security: [{JwtAuth: []}],
+                    description: "count all cancel order"
+                }
+            })
+            .get("/get-revenue-by-day", async ({user,query, ordersService}) => {
+                return await ordersService.getAllRevenueByTime(query.day);
+            }, {
+                detail: {
+                    tags: ["Manage order"],
+                    security: [{JwtAuth: []}],
+                    description: "count all cancel order"
+                },
+                query:t.Object({
+                    day:t.Number()
+                })
+            })
     )
 export default orderController;
