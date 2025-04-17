@@ -69,5 +69,25 @@ const receiptNoteController = new Elysia()
                     limit:t.Optional(t.Number())
                 })
             })
+            .get("get-all-receipt-note-by-product-id", async ({user, query, receiptNoteService}) => {
+                return await receiptNoteService.getAllReceiptNoteByProductId(query.productId)
+            }, {
+                detail: {
+                    tags: ["Receipt note"],
+                    security: [{JwtAuth: []}],
+                },
+                query: t.Object({
+                    productId: t.Number(),
+                })
+            })
+            .get("get-tong-thu-chi", async ({user, query, receiptNoteService}) => {
+                return await receiptNoteService.getTongThu()
+            }, {
+                detail: {
+                    tags: ["Receipt note"],
+                    security: [{JwtAuth: []}],
+                }
+            })
+
     )
 export default receiptNoteController;

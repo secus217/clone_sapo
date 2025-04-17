@@ -1,69 +1,70 @@
 import {initORM} from "../db"
 import {Elysia} from "elysia"
-import {Orders, ExportNote, OrderDetail, ExportNoteDetail, ReceiptNote, Product, Inventory} from "../entities/index";
+import {ReceiptNote} from "../entities/index";
 import {QueryOrder} from "@mikro-orm/core";
 
 export class ReceiptNoteService {
-    async createNewReceiptNote(userId:number,data: {
+    async createNewReceiptNote(userId: number, data: {
         storeId: number,
         totalAmount: number,
-        paymentMethod:"cash" | "bank",
-        note?:string,
+        paymentMethod: "cash" | "bank",
+        note?: string,
         type: "THU" | "CHI",
     }) {
-        try{
-            const db=await initORM();
-            const receiptNote=new ReceiptNote();
-            receiptNote.storeId=data.storeId;
-            receiptNote.createrId=userId;
-            receiptNote.totalAmount=data.totalAmount;
-            receiptNote.paymentMethod=data.paymentMethod;
-            receiptNote.note=data.note;
-            receiptNote.status="completed";
-            receiptNote.type=data.type;
+        try {
+            const db = await initORM();
+            const receiptNote = new ReceiptNote();
+            receiptNote.storeId = data.storeId;
+            receiptNote.createrId = userId;
+            receiptNote.totalAmount = data.totalAmount;
+            receiptNote.paymentMethod = data.paymentMethod;
+            receiptNote.note = data.note;
+            receiptNote.status = "completed";
+            receiptNote.type = data.type;
             db.em.persistAndFlush(receiptNote);
             return {
                 receiptNote
             };
-        }catch(error){
+        } catch (error) {
             return {
                 error
             }
         }
     }
-    async getAllReceiptNotes(storeId:number,page:number=1,limit:number=10) {
-        const db=await initORM();
-        const offset=(page-1)*limit;
+
+    async getAllReceiptNotes(storeId: number, page: number = 1, limit: number = 10) {
+        const db = await initORM();
+        const offset = (page - 1) * limit;
         const options = {
             limit,
             offset,
             orderBy: {id: QueryOrder.ASC}
         };
-        const where={storeId:storeId};
-        const [receiptNote,total]=await db.receiptNote.findAndCount(where,options);
-        const storeIds=receiptNote.map((item)=>item.storeId);
-        const stores=await db.store.find({
-            id:{$in:storeIds}
+        const where = {storeId: storeId};
+        const [receiptNote, total] = await db.receiptNote.findAndCount(where, options);
+        const storeIds = receiptNote.map((item) => item.storeId);
+        const stores = await db.store.find({
+            id: {$in: storeIds}
         })
-        const storeMap=new Map(stores.map(item=>[item.id,item]));
-        const totalPage=Math.ceil(total/limit);
-        return{
-            data:receiptNote.map((note:any)=>{
-                const store=storeMap.get(note.storeId);
+        const storeMap = new Map(stores.map(item => [item.id, item]));
+        const totalPage = Math.ceil(total / limit);
+        return {
+            data: receiptNote.map((note: any) => {
+                const store = storeMap.get(note.storeId);
                 return {
-                    createAt:note.createdAt,
-                    orderId:note.orderId,
-                    storeId:note.storeId,
-                    createrId:note.createrId,
-                    totalAmount:note.totalAmount,
-                    paymentMethod:note.paymentMethod,
-                    note:note.note,
-                    status:note.status,
-                    type:note.type,
+                    createAt: note.createdAt,
+                    orderId: note.orderId,
+                    storeId: note.storeId,
+                    createrId: note.createrId,
+                    totalAmount: note.totalAmount,
+                    paymentMethod: note.paymentMethod,
+                    note: note.note,
+                    status: note.status,
+                    type: note.type,
                     store
                 }
             }),
-            meta:{
+            meta: {
                 currentPage: page,
                 itemsPerPage: limit,
                 totalItems: total,
@@ -74,26 +75,60 @@ export class ReceiptNoteService {
         }
 
     }
-    async getAllReceiptNoteForAdmin(filter:{ storeId?:number },page:number=1,limit:number=10){
-        const db=await initORM();
-        const offset=(page-1)*limit;
-        const where:any={};
-        if(filter.storeId){
-            where.storeId=filter.storeId;
+
+    async getAllReceiptNoteForAdmin(filter: { storeId?: number }, page: number = 1, limit: number = 10) {
+        const db = await initORM();
+        const offset = (page - 1) * limit;
+        const where: any = {};
+        if (filter.storeId) {
+            where.storeId = filter.storeId;
         }
-        const [receiptNotes,total]=await db.receiptNote.findAndCount(where,{
+        const [receiptNotes, total] = await db.receiptNote.findAndCount(where, {
             limit,
             offset
         });
-        const totalPages=Math.ceil(total/limit);
+        const totalPages = Math.ceil(total / limit);
         return {
-            data:receiptNotes,
-            meta:{
-                currentPage:page,
-                itemsPerPage:limit,
-                totalItems:total,
-                totalPages:totalPages
+            data: receiptNotes,
+            meta: {
+                currentPage: page,
+                itemsPerPage: limit,
+                totalItems: total,
+                totalPages: totalPages
             }
+        }
+
+    }
+
+    async getAllReceiptNoteByProductId(productId: number) {
+        const db = await initORM();
+        const orderDetail=await db.orderDetail.find({
+            productId:productId
+        });
+        const orderIds=orderDetail.map(detail=>detail.order.id);
+        return await db.receiptNote.find({
+            orderId: {$in: orderIds}
+        });
+
+    }
+
+    async getTongThu(){
+        const db = await initORM();
+        let tongThu=0;
+        let tongChi=0;
+        const receiptNotes = await db.receiptNote.findAll();
+        const thu=receiptNotes.filter(note=>note.type === "THU");
+        const chi=receiptNotes.filter(note=>note.type === "CHI");
+        thu.map(item=>{
+            tongThu+=item.totalAmount
+        });
+        chi.map(item=>{
+            tongChi=item.totalAmount;
+        });
+
+        return{
+            tongThu:tongThu,
+            tongChi:tongChi
         }
 
     }
