@@ -79,24 +79,7 @@ const orderController = new Elysia()
                     })
                 }
             )
-            .get("/get-order-by-customer-id", async ({query, ordersService}) => {
-                    const page = query.page ? parseInt(query.page as string) : 1;
-                    const limit=query.limit ? parseInt(query.limit as string) : 10;
-                    const productId=parseInt(query.customerId);
-                    return await ordersService.getOrderByCustomerId(page,limit,productId)
-                }, {
-                    detail: {
-                        tags: ["Manage order"],
-                        security: [{JwtAuth: []}],
-                        description: "Get order by product id"
-                    },
-                    query: t.Object({
-                        customerId: t.String(),
-                        page: t.Optional(t.String()),
-                        limit: t.Optional(t.String()),
-                    })
-                }
-            )
+
             .delete("/delete-order", async ({user,body, ordersService}) => {
                     if(user.role==="staff"){
                         throw new Error("You dont have permission to perform this action.");
@@ -252,5 +235,23 @@ const orderController = new Elysia()
                     day:t.Number()
                 })
             })
+            .get("/get-order-by-customer-id", async ({query, ordersService}) => {
+                    const page = query.page ? parseInt(query.page as string) : 1;
+                    const limit=query.limit ? parseInt(query.limit as string) : 10;
+                    const productId=parseInt(query.customerId);
+                    return await ordersService.getOrderByCustomerId(page,limit,productId)
+                }, {
+                    detail: {
+                        tags: ["Manage order"],
+                        security: [{JwtAuth: []}],
+                        description: "Get order by product id"
+                    },
+                    query: t.Object({
+                        customerId: t.String(),
+                        page: t.Optional(t.String()),
+                        limit: t.Optional(t.String()),
+                    })
+                }
+            )
     )
 export default orderController;

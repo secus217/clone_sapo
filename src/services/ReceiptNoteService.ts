@@ -51,6 +51,7 @@ export class ReceiptNoteService {
             data:receiptNote.map((note:any)=>{
                 const store=storeMap.get(note.storeId);
                 return {
+                    createAt:note.createdAt,
                     orderId:note.orderId,
                     storeId:note.storeId,
                     createrId:note.createrId,

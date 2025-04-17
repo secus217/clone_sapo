@@ -107,7 +107,7 @@ export class ManageUserService {
             offset,
             orderBy: {id: QueryOrder.ASC}
         }
-        const where = search ? {username: {$like: `%${search}%`,role:"customer"}} : { role: "customer" };
+        const where = search ? {username: {$like: `%${search}%`},role:"customer"} : { role: "customer" };
         const [users, total] = await db.user.findAndCount(where, options);
         const totalPages = Math.ceil(total / limit);
         return {

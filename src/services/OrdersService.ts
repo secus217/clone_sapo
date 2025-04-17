@@ -229,7 +229,7 @@ export class OrdersService {
         try {
             const db = await initORM();
             const offset = (page - 1) * limit;
-            const [order, total] = await db.orders.findAndCount({
+            const [orders, total] = await db.orders.findAndCount({
                     customerId: customerId,
                 },
                 {
@@ -239,15 +239,34 @@ export class OrdersService {
                     populate: ['orderDetails']
                 },
             );
+            const productIds=orders.flatMap((order:any) =>order.orderDetails.map((detail:any)=>detail.productId));
+            const products=await db.product.find({
+                id:{$in:productIds}
+            })
+            let totalExpire=0;
+            const productMap=new Map(products.map(product=>[product.id,product]));
+            const ordersWithProduct=orders.map((order:any)=>{
+                totalExpire+=order.totalAmount;
+                const orderWithProduct={...order};
+                orderWithProduct.orderDetails=order.orderDetails.map((detail:any)=>{
+                    const { order: _, ...detailWithoutOrder } = detail;
+                    return{
+                        ...detailWithoutOrder,
+                        product:productMap.get(detail.productId)||null,
+                    }
+                });
+                return orderWithProduct;
+            })
             const totalPages = Math.ceil(total / limit);
             return {
-                data: order,
+                data: ordersWithProduct,
                 currentPage: page,
                 itemsPerPage: limit,
                 totalItems: total,
                 totalPages,
                 hasNextPage: page < totalPages,
-                hastPreviousPage: page > 1
+                hastPreviousPage: page > 1,
+                totalExpire:totalExpire
             }
         } catch (e: any) {
             throw new Error(e.message);

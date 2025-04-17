@@ -149,29 +149,48 @@ export class ProductService {
         }
     }
 
-    async getAllProductsByStoreId(storeId: number) {
+    async getAllProductsByStoreId(storeId?: number,search?:string) {
         const db = await initORM();
         try {
-            const inventory = await db.inventory.find({storeId: storeId});
-            if (!inventory) {
-                throw new Error(`Product not found`);
+            let where:any={};
+            if(search) {
+                where.name = {$ilike: `%${search}%`};
             }
-            console.log("inventory", inventory);
-            const productIds = inventory.map(product => product.productId);
-            console.log("check productIds",productIds)
-            const products = await db.product.find(
-                {
-                    id: {$in: productIds}
+            if(storeId!==undefined) {
+                const inventory=await db.inventory.find({storeId: storeId});
+                if(!inventory) {
+                    return [];
                 }
-            );
-            console.log("products", products);
-            return products.map(product => {
-                const inventoryItem=inventory.find(item=>item.productId===product.id);
-                return{
-                    ...product,
-                    quantity:inventoryItem?inventoryItem.quantity:0
-                } as any
-            })
+                const productIds=inventory.map(inventory=>inventory.productId);
+                where.id= {$in: productIds};
+                const products = await db.product.find(where);
+                return products.map((product) => {
+                    const inventoryItem=inventory.find(item=>item.productId===product.id);
+                    return{
+                        ...product,
+                        quantity:inventoryItem?inventoryItem.quantity:0
+                    }
+                });
+            } else{
+               const allIventory=await db.inventory.findAll();
+               const uniqueProductIds=[...new Set(allIventory.map(item=>item.productId))];
+               where={
+                   ...where,
+                   id: {$in: uniqueProductIds},
+               }
+               const products=await db.product.find(where);
+                console.log(
+                    "check where",where
+                )
+               return products.map((product) => {
+                   const inventoryItems=allIventory.filter(item=>item.productId===product.id);
+                   const totalQuantity=inventoryItems.reduce((sum,item)=>sum+item.quantity,0);
+                   return {
+                       ...product,
+                       quantity:totalQuantity
+                   }
+               }) as any
+            }
 
         } catch (err: any) {
             throw new Error(err.message);

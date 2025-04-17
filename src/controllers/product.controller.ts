@@ -72,7 +72,8 @@ const productController = new Elysia()
                 })
             })
             .get("/get-all-product-by-store-id", async ({query, productService}) => {
-                return await productService.getAllProductsByStoreId(query.storeId)
+                const search=query?.search
+                return await productService.getAllProductsByStoreId(query.storeId,search)
             }, {
                 detail: {
                     tags: ["Manage product"],
@@ -80,7 +81,8 @@ const productController = new Elysia()
                     description: "Get all product by store id"
                 },
                 query: t.Object({
-                    storeId: t.Number()
+                    storeId: t.Optional(t.Number()),
+                    search:t.Optional(t.String())
                 })
             })
             .put("/delete-product", async ({query, productService}) => {
