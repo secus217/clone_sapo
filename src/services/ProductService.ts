@@ -149,64 +149,67 @@ export class ProductService {
         }
     }
 
-    async getAllProductsByStoreId(storeId?: number,search?:string) {
+    async getAllProductsByStoreId(storeId?: number, search?: string) {
         const db = await initORM();
         try {
-            let where:any={};
-            if(search) {
+            const store=await db.store.findOneOrFail({
+                id:storeId
+            })
+            let where: any = {};
+            if (search) {
                 where.name = {$ilike: `%${search}%`};
             }
-            if(storeId!==undefined) {
-                const inventory=await db.inventory.find({storeId: storeId});
-                if(!inventory) {
+            if (storeId !== undefined) {
+                const inventory = await db.inventory.find({storeId: storeId});
+                if (!inventory) {
                     return [];
                 }
-                const productIds=inventory.map(inventory=>inventory.productId);
-                where.id= {$in: productIds};
+                const productIds = inventory.map(inventory => inventory.productId);
+                where.id = {$in: productIds};
                 const products = await db.product.find(where);
                 return products.map((product) => {
-                    const inventoryItem=inventory.find(item=>item.productId===product.id);
-                    return{
+                    const inventoryItem = inventory.find(item => item.productId === product.id);
+                    return {
                         ...product,
-                        quantity:inventoryItem?inventoryItem.quantity:0
+                        quantity: inventoryItem ? inventoryItem.quantity : 0,
+                        store:store
                     }
                 });
-            } else{
-               const allIventory=await db.inventory.findAll();
-               const uniqueProductIds=[...new Set(allIventory.map(item=>item.productId))];
-               where={
-                   ...where,
-                   id: {$in: uniqueProductIds},
-               }
-               const products=await db.product.find(where);
-                console.log(
-                    "check where",where
-                )
-               return products.map((product) => {
-                   const inventoryItems=allIventory.filter(item=>item.productId===product.id);
-                   const totalQuantity=inventoryItems.reduce((sum,item)=>sum+item.quantity,0);
-                   return {
-                       ...product,
-                       quantity:totalQuantity
-                   }
-               }) as any
+            } else {
+                const allIventory = await db.inventory.findAll();
+                const uniqueProductIds = [...new Set(allIventory.map(item => item.productId))];
+                where = {
+                    ...where,
+                    id: {$in: uniqueProductIds},
+                }
+                const products = await db.product.find(where);
+
+                return products.map((product) => {
+                    const inventoryItems = allIventory.filter(item => item.productId === product.id);
+                    const totalQuantity = inventoryItems.reduce((sum, item) => sum + item.quantity, 0);
+                    return {
+                        ...product,
+                        quantity: totalQuantity
+                    }
+                }) as any
             }
 
         } catch (err: any) {
             throw new Error(err.message);
         }
     }
-    async getAllProductForAdmin(page:number=1,limit:number=10) {
+
+    async getAllProductForAdmin(page: number = 1, limit: number = 10) {
         const db = await initORM();
-        const offset=(page-1)*limit;
-        const [products,total]= await db.product.findAndCount({},{
+        const offset = (page - 1) * limit;
+        const [products, total] = await db.product.findAndCount({}, {
             limit,
             offset,
             populate: ["category"]
         });
-        const totalPage=Math.ceil(total/limit);
-        return{
-            data:products,
+        const totalPage = Math.ceil(total / limit);
+        return {
+            data: products,
             page,
             limit,
             totalPage
