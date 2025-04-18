@@ -100,14 +100,10 @@ export class ReceiptNoteService {
 
     }
 
-    async getAllReceiptNoteByProductId(productId: number) {
+    async getAllReceiptNoteByOrderId(productId: number) {
         const db = await initORM();
-        const orderDetail=await db.orderDetail.find({
-            productId:productId
-        });
-        const orderIds=orderDetail.map(detail=>detail.order.id);
         return await db.receiptNote.find({
-            orderId: {$in: orderIds}
+            orderId: productId
         });
 
     }
@@ -116,6 +112,8 @@ export class ReceiptNoteService {
         const db = await initORM();
         let tongThu=0;
         let tongChi=0;
+        let tongTienMat=0;
+        let tongTienBank=0;
         const receiptNotes = await db.receiptNote.findAll();
         const thu=receiptNotes.filter(note=>note.type === "THU");
         const chi=receiptNotes.filter(note=>note.type === "CHI");
@@ -125,10 +123,20 @@ export class ReceiptNoteService {
         chi.map(item=>{
             tongChi=item.totalAmount;
         });
+        const tienmat=receiptNotes.filter(note=>note.paymentMethod === "cash");
+        const bank=receiptNotes.filter(note=>note.paymentMethod === "bank");
+        tienmat.map(item=>{
+            tongTienMat+=item.totalAmount;
+        })
+        bank.map(item=>{
+            tongTienBank+=item.totalAmount;
+        })
 
         return{
             tongThu:tongThu,
-            tongChi:tongChi
+            tongChi:tongChi,
+            tienmat:tongTienMat,
+            bank:tongTienBank
         }
 
     }

@@ -152,14 +152,14 @@ export class ProductService {
     async getAllProductsByStoreId(storeId?: number, search?: string) {
         const db = await initORM();
         try {
-            const store=await db.store.findOneOrFail({
-                id:storeId
-            })
             let where: any = {};
             if (search) {
                 where.name = {$ilike: `%${search}%`};
             }
             if (storeId !== undefined) {
+                const store=await db.store.findOneOrFail({
+                    id:storeId
+                })
                 const inventory = await db.inventory.find({storeId: storeId});
                 if (!inventory) {
                     return [];
