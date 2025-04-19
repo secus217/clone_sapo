@@ -151,49 +151,28 @@ export class ProductService {
 
     async getAllProductsByStoreId(storeId?: number, search?: string) {
         const db = await initORM();
+        let inventories: any = [];
         try {
-            let where: any = {};
-            if (search) {
-                where.name = {$ilike: `%${search}%`};
-            }
-            if (storeId !== undefined) {
-                const store=await db.store.findOneOrFail({
-                    id:storeId
-                })
-                const inventory = await db.inventory.find({storeId: storeId});
-                if (!inventory) {
-                    return [];
+            inventories = await db.inventory.find({});
+            const productIds = inventories.map((item: any) => item.productId);
+            const storeIds = inventories.map((item: any) => item.storeId);
+            const products = await db.product.find({id: {$in: productIds}});
+            const stores = await db.store.find({id: {$in: storeIds}});
+            const productsMap = new Map(products.map((item: any) => [item.id, item]));
+            const storeMap = new Map(stores.map(item => [item.id, item]));
+            inventories = inventories.map((item: any) => {
+                const store = storeMap.get(item.storeId);
+                const product = productsMap.get(item.productId);
+                return {
+                    ...item,
+                    store: store,
+                    product: product,
                 }
-                const productIds = inventory.map(inventory => inventory.productId);
-                where.id = {$in: productIds};
-                const products = await db.product.find(where);
-                return products.map((product) => {
-                    const inventoryItem = inventory.find(item => item.productId === product.id);
-                    return {
-                        ...product,
-                        quantity: inventoryItem ? inventoryItem.quantity : 0,
-                        store:store
-                    }
-                });
-            } else {
-                const allIventory = await db.inventory.findAll();
-                const uniqueProductIds = [...new Set(allIventory.map(item => item.productId))];
-                where = {
-                    ...where,
-                    id: {$in: uniqueProductIds},
-                }
-                const products = await db.product.find(where);
-
-                return products.map((product) => {
-                    const inventoryItems = allIventory.filter(item => item.productId === product.id);
-                    const totalQuantity = inventoryItems.reduce((sum, item) => sum + item.quantity, 0);
-                    return {
-                        ...product,
-                        quantity: totalQuantity
-                    }
-                }) as any
+            })
+            if(storeId){
+                inventories=inventories.filter((item: any) => item.storeId === storeId);
             }
-
+            return inventories;
         } catch (err: any) {
             throw new Error(err.message);
         }
