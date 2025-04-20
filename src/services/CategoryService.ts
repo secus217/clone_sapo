@@ -17,6 +17,7 @@ export class CategoryService {
         if (search) {
             where.name = {$like: `%${search}%`};
         }
+        console.log("thanh")
 
         const [categories, total] = await db.category.findAndCount(where, options as any);
         const totalPages = Math.ceil(total / limit);
