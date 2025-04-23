@@ -152,6 +152,7 @@ export class ProductService {
     async getAllProductsByStoreId(storeId?: number, search?: string) {
         const db = await initORM();
         let inventories: any = [];
+
         try {
             inventories = await db.inventory.find({});
             const productIds = inventories.map((item: any) => item.productId);
@@ -169,8 +170,11 @@ export class ProductService {
                     product: product,
                 }
             })
-            if(storeId){
-                inventories=inventories.filter((item: any) => item.storeId === storeId);
+            if (storeId) {
+                inventories = inventories.filter((item: any) => item.storeId === storeId);
+            }
+            if(search) {
+                inventories= inventories.filter((item: any) => item.productId == search||item.product.name.includes(search));
             }
             return inventories;
         } catch (err: any) {
@@ -193,6 +197,33 @@ export class ProductService {
             limit,
             totalPage
         }
+    }
+
+    async getTopProduct() {
+        const db = await initORM();
+        const orderDetails = await db.orderDetail.findAll();
+        const quantityMap: any = {};
+        orderDetails.forEach(orderDetail => {
+            if (!quantityMap[orderDetail.productId]) {
+                quantityMap[orderDetail.productId] = 0;
+            }
+            quantityMap[orderDetail.productId] += orderDetail.quantity;
+        });
+        const sortedProductIds = Object.entries(quantityMap)
+            .sort((a: any, b: any) => b[1] - a[1]).slice(0, 5);
+        const topProductsIds: any[] = sortedProductIds.map(item => item[0]);
+        const products = await db.product.find({
+            id: {$in: topProductsIds}
+        });
+        return topProductsIds.map(id => {
+            const product:any = products.find(item => item.id == id);
+            const quantity=quantityMap[id];
+            return {
+                ...product,
+                quantity
+            }
+        });
+
     }
 
 }

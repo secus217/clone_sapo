@@ -96,5 +96,15 @@ const productController = new Elysia()
                     productId: t.Number()
                 })
             })
+            .get("/top-product", async ({productService}) => {
+                return await productService.getTopProduct()
+            }, {
+                detail: {
+                    tags: ["Manage product"],
+                    security: [{JwtAuth: []}],
+                }
+
+            })
+
     )
 export default productController;
