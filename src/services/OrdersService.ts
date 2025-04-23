@@ -386,27 +386,7 @@ export class OrdersService {
         });
         return revenues;
     }
-    async getAllRevenueByTime(days=7){
-        const db = await initORM();
-        let revenues=0;
-        const startDate = new Date();
-        startDate.setHours(0, 0, 0, 0); // Đặt về đầu ngày hiện tại
-        startDate.setDate(startDate.getDate() - (days - 1)); // Trừ đi (days-1) để bao gồm cả ngày hiện tại
 
-        const endDate = new Date();
-        endDate.setHours(23, 59, 59, 999);
-        const orders = await db.orders.find({
-                paymentStatus: "paid",
-                createdAt: {
-                    $gte: startDate,
-                    $lte: endDate
-                }
-        });
-        orders.forEach(order => {
-            revenues += order.totalAmount;
-        });
-        return revenues;
-    }
     async getAllNewOrder(){
         const db = await initORM();
         const oneDayAgo = new Date();
@@ -438,6 +418,51 @@ export class OrdersService {
             count
         }
     }
+    async getAllRevenueByTime(days = 7, storeId?: number) {
+        const db = await initORM();
+        const revenuesByDay = [];
+        for (let i = 0; i < days; i++) {
+            // Tính ngày hiện tại
+            const today = new Date();
+            const currentDate = new Date(Date.UTC(
+                today.getUTCFullYear(),
+                today.getUTCMonth(),
+                today.getUTCDate() - (days - 1 - i)
+            ));
+            const nextDate = new Date(currentDate);
+            nextDate.setUTCDate(currentDate.getUTCDate() + 1);
+
+            // Tạo điều kiện query động
+            const whereCondition: any = {
+                shippingStatus: "completed",
+                createdAt: {
+                    $gte: currentDate,
+                    $lt: nextDate,
+                }
+            };
+
+            if (storeId !== undefined) {
+                whereCondition.storeId = storeId;
+            }
+
+            // Truy vấn các đơn hàng trong ngày
+            const orders = await db.orders.find(whereCondition);
+
+            // Tính tổng doanh thu trong ngày
+            let dailyRevenue = 0;
+            orders.forEach(order => {
+                dailyRevenue += order.totalAmount;
+            });
+
+
+            revenuesByDay.push({
+                date: currentDate.toISOString().split("T")[0],
+                revenue: dailyRevenue,
+            });
+        }
+        return revenuesByDay;
+    }
+
 
 }
 

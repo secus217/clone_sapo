@@ -223,18 +223,20 @@ const orderController = new Elysia()
                     description: "count all cancel order"
                 }
             })
-            .get("/get-revenue-by-day", async ({user,query, ordersService}) => {
-                return await ordersService.getAllRevenueByTime(query.day);
+            .get("/get-revenue-by-day", async ({ query, ordersService }) => {
+                return await ordersService.getAllRevenueByTime(query.day, query.storeId);
             }, {
                 detail: {
                     tags: ["Manage order"],
-                    security: [{JwtAuth: []}],
-                    description: "count all cancel order"
+                    security: [{ JwtAuth: [] }],
+                    description: "Get daily revenue statistics (optionally filter by store)",
                 },
-                query:t.Object({
-                    day:t.Number()
-                })
+                query: t.Object({
+                    day: t.Number(),
+                    storeId: t.Optional(t.Number()),
+                }),
             })
+
             .get("/get-order-by-customer-id", async ({query, ordersService}) => {
                     const page = query.page ? parseInt(query.page as string) : 1;
                     const limit=query.limit ? parseInt(query.limit as string) : 10;
