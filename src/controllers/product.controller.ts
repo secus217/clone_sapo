@@ -105,6 +105,15 @@ const productController = new Elysia()
                 }
 
             })
+            .get("/near-order", async ({productService}) => {
+                return await productService.nearOrder()
+            }, {
+                detail: {
+                    tags: ["Manage product"],
+                    security: [{JwtAuth: []}],
+                }
+
+            })
 
     )
 export default productController;

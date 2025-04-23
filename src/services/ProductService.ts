@@ -225,6 +225,14 @@ export class ProductService {
         });
 
     }
+    async nearOrder(){
+        const db = await initORM();
+        return db.orders.find({}, {
+            limit: 6,
+            orderBy: {createdAt: "DESC"}
+        });
+
+    }
 
 }
 
