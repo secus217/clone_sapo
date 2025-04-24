@@ -51,7 +51,10 @@ const productController = new Elysia()
                     limit: t.Optional(t.Number())
                 })
             })
-            .post("/create-new-product", async ({body, productService}) => {
+            .post("/create-new-product", async ({user,body, productService}) => {
+                if(user.role!=="admin"){
+                    throw new Error("You dont have permission!")
+                }
                 return await productService.createProduct(body)
             }, {
                 detail: {

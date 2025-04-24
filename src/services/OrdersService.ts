@@ -63,6 +63,9 @@ export class OrdersService {
                     totalPrice: item.quantity * item.unitPrice
                 })
             );
+            const customer =await db.user.findOneOrFail({
+                id:data.customerId
+            })
 
 
             const receiptNote = em.create(ReceiptNote, {
@@ -72,8 +75,12 @@ export class OrdersService {
                 totalAmount: totalAmount,
                 paymentMethod: data.paymentMethod,
                 status: "completed",
-                type: "THU"
+                type: "THU",
+                object:"customer",
+                nameOfCustomer:customer.username,
+                typeOfNote:"auto"
             });
+
 
 
             await em.persistAndFlush([
@@ -178,7 +185,18 @@ export class OrdersService {
         const db = await initORM();
         try {
             const order = await db.orders.findOneOrFail({id: orderId});
+            const orderdetails=await db.orderDetail.find({
+                order: {id:orderId}
+            })
             order.isDeleted = true;
+            const inventorys=await db.inventory.find({
+            storeId:order.storeId
+            })
+            orderdetails.map(async (detail:any)=>{
+                const inventory:any=inventorys.find(item=>item.productId==detail.productId);
+                inventory.quantity+=detail.quantity;
+                await db.em.persistAndFlush(inventory);
+            })
             await db.em.persistAndFlush(order);
             return {
                 success: true,

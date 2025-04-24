@@ -10,6 +10,9 @@ export class ReceiptNoteService {
         paymentMethod: "cash" | "bank",
         note?: string,
         type: "THU" | "CHI",
+        object?: string,
+        nameOfCustomer?: string,
+        typeOfNote?: string,
     }) {
         try {
             const db = await initORM();
@@ -21,6 +24,9 @@ export class ReceiptNoteService {
             receiptNote.note = data.note;
             receiptNote.status = "completed";
             receiptNote.type = data.type;
+            receiptNote.object = data.object;
+            receiptNote.nameOfCustomer = data.nameOfCustomer;
+            receiptNote.typeOfNote=data.typeOfNote;
             db.em.persistAndFlush(receiptNote);
             return {
                 receiptNote

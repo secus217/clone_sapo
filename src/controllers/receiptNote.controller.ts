@@ -53,7 +53,10 @@ const receiptNoteController = new Elysia()
                     type:t.Union([
                         t.Literal("THU"),
                         t.Literal("CHI")
-                    ])
+                    ]),
+                    object:t.Optional(t.String()),
+                    nameOfCustomer:t.Optional(t.String()),
+                    typeOfNote:t.Optional(t.String())
                 })
             })
             .get("get-all-receipt-note", async ({user, query, receiptNoteService}) => {

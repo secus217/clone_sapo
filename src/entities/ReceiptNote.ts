@@ -21,4 +21,10 @@ export default class ReceiptNote extends BaseEntity {
     status!: 'completed' | 'cancelled';
     @Property({nullable: true})
     type?: "THU" | "CHI";
+    @Property({nullable: true})
+    object?: string;
+    @Property({nullable: true})
+    nameOfCustomer?: string;
+    @Property({nullable: true})
+    typeOfNote?: string;
 }
