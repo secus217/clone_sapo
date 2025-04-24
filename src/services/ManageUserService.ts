@@ -144,13 +144,16 @@ export class ManageUserService {
             staff
         }
     }
-    async getAllStaff(page = 1, limit = 10){
+    async getAllStaff(page = 1, limit = 10,search?:string){
+        let where:any={};
+        where.role="staff"
+        if(search){
+            where.username={$ilike:`%${search}%`};
+        }
         const db = await initORM();
         const offset = (page - 1) * limit;
         return await db.user.findAll({
-            where: {
-                role: "staff"
-            },
+            where,
             limit: limit,
             offset: offset
         });

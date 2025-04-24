@@ -103,7 +103,8 @@ const manageUserController = new Elysia()
             .get("/get-all-staff", async ({query, manageUserService}) => {
                 const page = query.page ? parseInt(query.page) : 1;
                 const limit = query.limit ? parseInt(query.limit) : 10;
-                return await manageUserService.getAllStaff(page, limit);
+                const search=query.search;
+                return await manageUserService.getAllStaff(page, limit,search);
             }, {
                 detail: {
                     tags: ["Manage user"],
@@ -111,7 +112,8 @@ const manageUserController = new Elysia()
                 },
                 query: t.Object({
                     page: t.Optional(t.String()),
-                    limit: t.Optional(t.String())
+                    limit: t.Optional(t.String()),
+                    search:t.Optional(t.String())
                 })
             })
 
