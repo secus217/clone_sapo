@@ -183,6 +183,8 @@ const orderController = new Elysia()
                             t.Literal("paid")
                         ]
                     ),
+                    discount:t.Optional(t.Number()),
+                    payedAmount:t.Optional(t.Number())
 
                 })
             })
