@@ -30,5 +30,7 @@ export default class Orders extends BaseEntity {
     remainAmount?: number;
     @Property({nullable: true})
     payedAmount?: number;
+    @Property({nullable: true})
+    discount?: number;
 
 }

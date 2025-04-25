@@ -14,6 +14,8 @@ export class OrdersService {
                           }>,
                           customerId: number,
                           paymentStatus: 'pending' | 'paid',
+                          discount?: number,
+                          payedAmount?: number,
 
                       }, createrId: number
     ) {
@@ -39,17 +41,20 @@ export class OrdersService {
 
             const totalQuantity = data.items.reduce((sum, item) => sum + item.quantity, 0);
             const totalAmount = data.items.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
+            const totalAmountAfterDiscount=totalAmount*(100-(data?.discount as any))/100;
             const order = em.create(Orders, {
                 storeId: data.fromStoreId,
                 createrId: createrId,
                 quantity: totalQuantity,
-                totalAmount: totalAmount,
+                totalAmount: totalAmountAfterDiscount,
                 paymentMethod: data.paymentMethod,
                 orderStatus: "pending",
                 shippingStatus: "processing",
                 customerId: data.customerId,
                 paymentStatus: data.paymentStatus,
-                orderDetails:[]
+                orderDetails: [],
+                payedAmount: data.payedAmount,
+                remainAmount: totalAmountAfterDiscount-(data.payedAmount as any),
             });
 
             await em.flush();
@@ -63,8 +68,8 @@ export class OrdersService {
                     totalPrice: item.quantity * item.unitPrice
                 })
             );
-            const customer =await db.user.findOneOrFail({
-                id:data.customerId
+            const customer = await db.user.findOneOrFail({
+                id: data.customerId
             })
 
 
@@ -76,11 +81,10 @@ export class OrdersService {
                 paymentMethod: data.paymentMethod,
                 status: "completed",
                 type: "THU",
-                object:"customer",
-                nameOfCustomer:customer.username,
-                typeOfNote:"auto"
+                object: "customer",
+                nameOfCustomer: customer.username,
+                typeOfNote: "auto"
             });
-
 
 
             await em.persistAndFlush([
@@ -185,16 +189,16 @@ export class OrdersService {
         const db = await initORM();
         try {
             const order = await db.orders.findOneOrFail({id: orderId});
-            const orderdetails=await db.orderDetail.find({
-                order: {id:orderId}
+            const orderdetails = await db.orderDetail.find({
+                order: {id: orderId}
             })
             order.isDeleted = true;
-            const inventorys=await db.inventory.find({
-            storeId:order.storeId
+            const inventorys = await db.inventory.find({
+                storeId: order.storeId
             })
-            orderdetails.map(async (detail:any)=>{
-                const inventory:any=inventorys.find(item=>item.productId==detail.productId);
-                inventory.quantity+=detail.quantity;
+            orderdetails.map(async (detail: any) => {
+                const inventory: any = inventorys.find(item => item.productId == detail.productId);
+                inventory.quantity += detail.quantity;
                 await db.em.persistAndFlush(inventory);
             })
             await db.em.persistAndFlush(order);
@@ -257,20 +261,20 @@ export class OrdersService {
                     populate: ['orderDetails']
                 },
             );
-            const productIds=orders.flatMap((order:any) =>order.orderDetails.map((detail:any)=>detail.productId));
-            const products=await db.product.find({
-                id:{$in:productIds}
+            const productIds = orders.flatMap((order: any) => order.orderDetails.map((detail: any) => detail.productId));
+            const products = await db.product.find({
+                id: {$in: productIds}
             })
-            let totalExpire=0;
-            const productMap=new Map(products.map(product=>[product.id,product]));
-            const ordersWithProduct=orders.map((order:any)=>{
-                totalExpire+=order.totalAmount;
-                const orderWithProduct={...order};
-                orderWithProduct.orderDetails=order.orderDetails.map((detail:any)=>{
-                    const { order: _, ...detailWithoutOrder } = detail;
-                    return{
+            let totalExpire = 0;
+            const productMap = new Map(products.map(product => [product.id, product]));
+            const ordersWithProduct = orders.map((order: any) => {
+                totalExpire += order.totalAmount;
+                const orderWithProduct = {...order};
+                orderWithProduct.orderDetails = order.orderDetails.map((detail: any) => {
+                    const {order: _, ...detailWithoutOrder} = detail;
+                    return {
                         ...detailWithoutOrder,
-                        product:productMap.get(detail.productId)||null,
+                        product: productMap.get(detail.productId) || null,
                     }
                 });
                 return orderWithProduct;
@@ -284,7 +288,7 @@ export class OrdersService {
                 totalPages,
                 hasNextPage: page < totalPages,
                 hastPreviousPage: page > 1,
-                totalExpire:totalExpire
+                totalExpire: totalExpire
             }
         } catch (e: any) {
             throw new Error(e.message);
@@ -393,49 +397,53 @@ export class OrdersService {
             db.em.clear();
         }
     }
-    async getAllRevenue(){
+
+    async getAllRevenue() {
         const db = await initORM();
-        let revenues=0;
-        const orders=await db.orders.find({
-            paymentStatus:"paid"
+        let revenues = 0;
+        const orders = await db.orders.find({
+            paymentStatus: "paid"
         });
         orders.map(order => {
-            revenues+=order.totalAmount;
+            revenues += order.totalAmount;
         });
         return revenues;
     }
 
-    async getAllNewOrder(){
+    async getAllNewOrder() {
         const db = await initORM();
         const oneDayAgo = new Date();
         oneDayAgo.setHours(oneDayAgo.getHours() - 24);
-        const [orders,count]=await db.orders.findAndCount({
-            createdAt:{
-                $gte:oneDayAgo
+        const [orders, count] = await db.orders.findAndCount({
+            createdAt: {
+                $gte: oneDayAgo
             }
         });
         return {
             count
         }
     }
-    async getPendingOrder(){
+
+    async getPendingOrder() {
         const db = await initORM();
-        const [orders,count]=await db.orders.findAndCount({
-          orderStatus:"pending"
+        const [orders, count] = await db.orders.findAndCount({
+            orderStatus: "pending"
         });
         return {
             count
         }
     }
-    async getCanncelOrder(){
+
+    async getCanncelOrder() {
         const db = await initORM();
-        const [orders,count]=await db.orders.findAndCount({
-            isDeleted:true
+        const [orders, count] = await db.orders.findAndCount({
+            isDeleted: true
         });
         return {
             count
         }
     }
+
     async getAllRevenueByTime(days = 7, storeId?: number) {
         const db = await initORM();
         const revenuesByDay = [];
