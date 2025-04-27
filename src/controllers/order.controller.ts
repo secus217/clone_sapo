@@ -167,10 +167,6 @@ const orderController = new Elysia()
                 },
                 body: t.Object({
                     fromStoreId: t.Number(),
-                    paymentMethod: t.Union([
-                        t.Literal("cash"),
-                        t.Literal("bank")
-                    ]),
                     items: t.Array(t.Object({
                             productId: t.Number(),
                             quantity: t.Number(),
@@ -184,7 +180,15 @@ const orderController = new Elysia()
                         ]
                     ),
                     discount:t.Optional(t.Number()),
-                    payedAmount:t.Optional(t.Number())
+                    paymentData:t.Array(t.Object(
+                        {
+                            amount:t.Number(),
+                            paymentMethod:t.Union([
+                                t.Literal("cash"),
+                                t.Literal("bank")
+                            ])
+                        }
+                    ))
 
                 })
             })

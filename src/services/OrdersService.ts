@@ -1,20 +1,25 @@
 import {initORM} from "../db"
 import {Elysia} from "elysia"
-import {ExportNote, ExportNoteDetail, OrderDetail, Orders, ReceiptNote,PaymentOrder} from "../entities/index";
+import {OrderDetail, Orders, PaymentOrder, ReceiptNote} from "../entities/index";
 import {QueryOrder} from "@mikro-orm/core";
 
 export class OrdersService {
     async createOrder(data: {
-                          fromStoreId: number, paymentMethod: 'cash' | 'bank',
+                          fromStoreId: number,
+                          paymentStatus: "pending" | "paid" | "cancelled",
                           items: Array<{
                               productId: number;
                               quantity: number;
                               unitPrice: number;
                           }>,
                           customerId: number,
-                          paymentStatus: 'pending' | 'paid',
                           discount?: number,
-                          payAmount?: number,
+                          paymentData: [
+                              {
+                                  amount: number,
+                                  paymentMethod: 'cash' | 'bank',
+                              }
+                          ]
 
                       }, createrId: number
     ) {
@@ -40,7 +45,11 @@ export class OrdersService {
 
             const totalQuantity = data.items.reduce((sum, item) => sum + item.quantity, 0);
             const totalAmount = data.items.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
-            const totalAmountAfterDiscount=totalAmount*(100-(data?.discount as any))/100;
+            const totalAmountAfterDiscount = totalAmount * (100 - (data?.discount as any)) / 100;
+            let payedAmount:any;
+            data.paymentData.map((item)=>{
+                payedAmount+=item.amount;
+            });
             const order = em.create(Orders, {
                 storeId: data.fromStoreId,
                 createrId: createrId,
@@ -51,15 +60,19 @@ export class OrdersService {
                 customerId: data.customerId,
                 paymentStatus: data.paymentStatus,
                 orderDetails: [],
-                remainAmount: totalAmountAfterDiscount-(data.payAmount as any)
+                remainAmount: totalAmountAfterDiscount - payedAmount
             });
-            const paymentOrder=em.create(PaymentOrder,{
-                orderId:order.id,
-                amount:data.payAmount,
-                paymentMethod:data.paymentMethod
-            })
+
 
             await em.flush();
+            const paymentOrders=data.paymentData.map((item)=>{
+                return em.create(PaymentOrder, {
+                    orderId: order.id,
+                    amount: item.amount,
+                    paymentMethod: item.paymentMethod
+                });
+            });
+            console.log("paymentOrders", paymentOrders);
 
             const orderDetails = data.items.map(item =>
                 em.create(OrderDetail, {
@@ -80,7 +93,7 @@ export class OrdersService {
                 storeId: data.fromStoreId,
                 createrId: createrId,
                 totalAmount: totalAmount,
-                paymentMethod: data.paymentMethod,
+                paymentMethod: data.paymentData[0].paymentMethod,
                 status: "completed",
                 type: "THU",
                 object: "customer",
@@ -93,7 +106,7 @@ export class OrdersService {
                 order,
                 ...orderDetails,
                 receiptNote,
-                paymentOrder
+                paymentOrders
             ]);
 
             // Commit transaction
@@ -490,16 +503,22 @@ export class OrdersService {
         }
         return revenuesByDay;
     }
-    async addPaymentOrder(orderId: number,amount:number,paymentMethod:"cash" | "bank") {
+
+    async addPaymentOrder(orderId: number, amount: number, paymentMethod: "cash" | "bank") {
         const db = await initORM();
-        const order = await db.orders.findOneOrFail({
+        const order:any = await db.orders.findOneOrFail({
             id: orderId
         });
-        const paymentOrder=new PaymentOrder();
-        paymentOrder.orderId=orderId;
-        paymentOrder.amount=amount;
-        paymentOrder.paymentMethod=paymentMethod;
+        order.remainAmount-= amount;
+        const paymentOrder = new PaymentOrder();
+        paymentOrder.orderId = orderId;
+        paymentOrder.amount = amount;
+        paymentOrder.paymentMethod = paymentMethod;
         await db.em.persistAndFlush(paymentOrder);
+        await db.em.persistAndFlush(order);
+        return{
+            success: true,
+        }
     }
 
 
