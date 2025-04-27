@@ -174,11 +174,6 @@ const orderController = new Elysia()
                         })
                     ),
                     customerId: t.Number(),
-                    paymentStatus: t.Union([
-                            t.Literal("pending"),
-                            t.Literal("paid")
-                        ]
-                    ),
                     discount:t.Optional(t.Number()),
                     paymentData:t.Array(t.Object(
                         {
@@ -261,24 +256,37 @@ const orderController = new Elysia()
                     })
                 }
             )
-            .get("/add-new-payment", async ({body, ordersService}) => {
+            .post("/update-order", async ({user, body, ordersService}) => {
+                return await ordersService.createOrder(body, user.id)
+            }, {
+                detail: {
+                    tags: ["Manage order"],
+                    security: [{JwtAuth: []}],
+                    description: "paymentStatus can only be 'pending' or 'paid'," + "paymentMethod can only be 'cash' or 'bank'"
+                },
+                body: t.Object({
+                    fromStoreId: t.Number(),
+                    items: t.Array(t.Object({
+                            productId: t.Number(),
+                            quantity: t.Number(),
+                            unitPrice: t.Number()
+                        })
+                    ),
+                    customerId: t.Number(),
+                    discount:t.Optional(t.Number()),
+                    paymentData:t.Array(t.Object(
+                        {
+                            amount:t.Number(),
+                            paymentMethod:t.Union([
+                                t.Literal("cash"),
+                                t.Literal("bank")
+                            ])
+                        }
+                    ))
 
-                    return await ordersService.addPaymentOrder(body.orderId,body.amount,body.paymentMethod)
-                }, {
-                    detail: {
-                        tags: ["Manage order"],
-                        security: [{JwtAuth: []}],
-                        description: "Add new payment for a order"
-                    },
-                    body: t.Object({
-                        orderId: t.Number(),
-                        amount: t.Number(),
-                        paymentMethod: t.Union([
-                            t.Literal("cash"),
-                            t.Literal("bank")
-                        ]),
-                    })
-                }
-            )
+                })
+            })
+
+
     )
 export default orderController;

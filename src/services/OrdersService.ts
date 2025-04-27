@@ -6,7 +6,6 @@ import {QueryOrder} from "@mikro-orm/core";
 export class OrdersService {
     async createOrder(data: {
                           fromStoreId: number,
-                          paymentStatus: "pending" | "paid" | "cancelled",
                           items: Array<{
                               productId: number;
                               quantity: number;
@@ -14,12 +13,12 @@ export class OrdersService {
                           }>,
                           customerId: number,
                           discount?: number,
-                          paymentData: [
+                          paymentData: Array<
                               {
                                   amount: number,
                                   paymentMethod: 'cash' | 'bank',
                               }
-                          ]
+                          >
 
                       }, createrId: number
     ) {
@@ -46,33 +45,32 @@ export class OrdersService {
             const totalQuantity = data.items.reduce((sum, item) => sum + item.quantity, 0);
             const totalAmount = data.items.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
             const totalAmountAfterDiscount = totalAmount * (100 - (data?.discount as any)) / 100;
-            let payedAmount:any;
-            data.paymentData.map((item)=>{
-                payedAmount+=item.amount;
+            let payedAmount: any;
+            data.paymentData.map((item) => {
+                payedAmount += item.amount;
             });
             const order = em.create(Orders, {
                 storeId: data.fromStoreId,
                 createrId: createrId,
                 quantity: totalQuantity,
                 totalAmount: totalAmountAfterDiscount,
-                orderStatus: "pending",
+                orderStatus: payedAmount === totalAmountAfterDiscount ? "completed" : "pending",
                 shippingStatus: "processing",
                 customerId: data.customerId,
-                paymentStatus: data.paymentStatus,
+                paymentStatus: payedAmount === totalAmountAfterDiscount ? "paid" : "pending",
                 orderDetails: [],
                 remainAmount: totalAmountAfterDiscount - payedAmount
             });
 
 
             await em.flush();
-            const paymentOrders=data.paymentData.map((item)=>{
+            const paymentOrders = data.paymentData.map((item) => {
                 return em.create(PaymentOrder, {
                     orderId: order.id,
                     amount: item.amount,
                     paymentMethod: item.paymentMethod
                 });
             });
-            console.log("paymentOrders", paymentOrders);
 
             const orderDetails = data.items.map(item =>
                 em.create(OrderDetail, {
@@ -125,6 +123,78 @@ export class OrdersService {
         }
     }
 
+    async updateOrder(
+        data: {
+            fromStoreId?: number,
+            items?: Array<{
+                productId: number;
+                quantity: number;
+                unitPrice: number;
+            }>,
+            customerId?: number,
+            discount?: number,
+            paymentData?: Array<
+                {
+                    amount?: number,
+                    paymentMethod?: 'cash' | 'bank',
+                }
+            >
+        }, createrId: number, orderId: number
+    ) {
+        const db = await initORM();
+        const order = await db.orders.findOneOrFail({
+            id:orderId
+        });
+
+        // Update basic order fields
+        if (data.fromStoreId) order.storeId = data.fromStoreId;
+        if (data.customerId) order.customerId = data.customerId;
+        if (data.discount !== undefined) order.discount = data.discount;
+
+        // Update order items if provided
+        if (data.items && data.items.length > 0) {
+            // Remove existing items
+            await db.em.nativeDelete('OrderItem', { orderId });
+
+            // Create new items
+            for (const item of data.items) {
+                const orderItem = db.em.create('OrderItem', {
+                    orderId,
+                    productId: item.productId,
+                    quantity: item.quantity,
+                    unitPrice: item.unitPrice,
+                    createdBy: createrId
+                });
+                db.em.persist(orderItem);
+            }
+        }
+
+        // Update payment data if provided
+        if (data.paymentData && data.paymentData.length > 0) {
+            // Remove existing payments
+            await db.em.nativeDelete('Payment', { orderId });
+
+            // Create new payments
+            for (const payment of data.paymentData) {
+                const paymentEntity = db.em.create('Payment', {
+                    orderId,
+                    amount: payment.amount,
+                    paymentMethod: payment.paymentMethod,
+                    createdBy: createrId
+                });
+                db.em.persist(paymentEntity);
+            }
+        }
+
+        // Update updatedBy and updatedAt
+        order.createrId = createrId;
+        order.updatedAt = new Date();
+
+        // Persist changes
+        await db.em.flush();
+
+        return order;
+    }
 
     async getOrderDetail(orderId: number) {
         const db = await initORM();
@@ -377,41 +447,7 @@ export class OrdersService {
 
     }
 
-    async updateOrder(orderId: number, data: {
-        storeId?: number,
-        createrId?: number,
-        quantity?: number,
-        totalAmount?: number,
-        paymentMethod?: 'cash' | 'bank',
-        paymentStatus?: 'pending' | 'paid',
-        orderStatus?: 'completed' | 'cancelled' | 'pending',
-        shippingStatus?: 'processing' | 'completed' | 'cancelled',
-        customerId?: number
-    }) {
-        const db = await initORM();
-        try {
-            const order = await db.orders.findOneOrFail({id: orderId});
 
-            if (data.storeId !== undefined) order.storeId = data.storeId;
-            if (data.createrId !== undefined) order.createrId = data.createrId;
-            if (data.quantity !== undefined) order.quantity = data.quantity;
-            if (data.totalAmount !== undefined) order.totalAmount = data.totalAmount;
-            if (data.paymentStatus) order.paymentStatus = data.paymentStatus;
-            if (data.orderStatus) order.orderStatus = data.orderStatus;
-            if (data.shippingStatus) order.shippingStatus = data.shippingStatus;
-            if (data.customerId !== undefined) order.customerId = data.customerId;
-            await db.em.persistAndFlush(order);
-            return {
-                success: true,
-                message: 'Order updated successfully',
-                order,
-            };
-        } catch (error: any) {
-            throw new Error(`Error updating order: ${error.message}`);
-        } finally {
-            db.em.clear();
-        }
-    }
 
     async getAllRevenue() {
         const db = await initORM();
@@ -494,31 +530,12 @@ export class OrdersService {
             orders.forEach(order => {
                 dailyRevenue += order.totalAmount;
             });
-
-
             revenuesByDay.push({
                 date: currentDate.toISOString().split("T")[0],
                 revenue: dailyRevenue,
             });
         }
         return revenuesByDay;
-    }
-
-    async addPaymentOrder(orderId: number, amount: number, paymentMethod: "cash" | "bank") {
-        const db = await initORM();
-        const order:any = await db.orders.findOneOrFail({
-            id: orderId
-        });
-        order.remainAmount-= amount;
-        const paymentOrder = new PaymentOrder();
-        paymentOrder.orderId = orderId;
-        paymentOrder.amount = amount;
-        paymentOrder.paymentMethod = paymentMethod;
-        await db.em.persistAndFlush(paymentOrder);
-        await db.em.persistAndFlush(order);
-        return{
-            success: true,
-        }
     }
 
 
