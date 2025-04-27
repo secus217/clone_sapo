@@ -1,6 +1,7 @@
 import {Entity, Property, PrimaryKey, ManyToOne, OneToMany, Collection, ManyToMany} from '@mikro-orm/core';
 import {BaseEntity} from "./BaseEntity";
 import OrderDetail from "../entities/OrderDetail";
+import PaymentOrder from "./PaymentOrder";
 
 @Entity()
 export default class Orders extends BaseEntity {
@@ -12,8 +13,6 @@ export default class Orders extends BaseEntity {
     quantity!: number;
     @Property()
     totalAmount!: number;
-    @Property({nullable: true})
-    paymentMethod!: "cash" | "bank";
     @Property({default: "pending"})
     paymentStatus!: "pending" | "paid" | "cancelled";
     @Property()
@@ -29,8 +28,7 @@ export default class Orders extends BaseEntity {
     @Property({nullable: true})
     remainAmount?: number;
     @Property({nullable: true})
-    payedAmount?: number;
-    @Property({nullable: true})
     discount?: number;
+
 
 }

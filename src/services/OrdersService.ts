@@ -1,7 +1,6 @@
 import {initORM} from "../db"
 import {Elysia} from "elysia"
-import {ExportNote, ExportNoteDetail, OrderDetail, Orders, ReceiptNote} from "../entities/index";
-import * as wasi from "node:wasi";
+import {ExportNote, ExportNoteDetail, OrderDetail, Orders, ReceiptNote,PaymentOrder} from "../entities/index";
 import {QueryOrder} from "@mikro-orm/core";
 
 export class OrdersService {
@@ -15,7 +14,7 @@ export class OrdersService {
                           customerId: number,
                           paymentStatus: 'pending' | 'paid',
                           discount?: number,
-                          payedAmount?: number,
+                          payAmount?: number,
 
                       }, createrId: number
     ) {
@@ -47,15 +46,18 @@ export class OrdersService {
                 createrId: createrId,
                 quantity: totalQuantity,
                 totalAmount: totalAmountAfterDiscount,
-                paymentMethod: data.paymentMethod,
                 orderStatus: "pending",
                 shippingStatus: "processing",
                 customerId: data.customerId,
                 paymentStatus: data.paymentStatus,
                 orderDetails: [],
-                payedAmount: data.payedAmount,
-                remainAmount: totalAmountAfterDiscount-(data.payedAmount as any),
+                remainAmount: totalAmountAfterDiscount-(data.payAmount as any)
             });
+            const paymentOrder=em.create(PaymentOrder,{
+                orderId:order.id,
+                amount:data.payAmount,
+                paymentMethod:data.paymentMethod
+            })
 
             await em.flush();
 
@@ -90,7 +92,8 @@ export class OrdersService {
             await em.persistAndFlush([
                 order,
                 ...orderDetails,
-                receiptNote
+                receiptNote,
+                paymentOrder
             ]);
 
             // Commit transaction
@@ -380,7 +383,6 @@ export class OrdersService {
             if (data.createrId !== undefined) order.createrId = data.createrId;
             if (data.quantity !== undefined) order.quantity = data.quantity;
             if (data.totalAmount !== undefined) order.totalAmount = data.totalAmount;
-            if (data.paymentMethod) order.paymentMethod = data.paymentMethod;
             if (data.paymentStatus) order.paymentStatus = data.paymentStatus;
             if (data.orderStatus) order.orderStatus = data.orderStatus;
             if (data.shippingStatus) order.shippingStatus = data.shippingStatus;
@@ -487,6 +489,17 @@ export class OrdersService {
             });
         }
         return revenuesByDay;
+    }
+    async addPaymentOrder(orderId: number,amount:number,paymentMethod:"cash" | "bank") {
+        const db = await initORM();
+        const order = await db.orders.findOneOrFail({
+            id: orderId
+        });
+        const paymentOrder=new PaymentOrder();
+        paymentOrder.orderId=orderId;
+        paymentOrder.amount=amount;
+        paymentOrder.paymentMethod=paymentMethod;
+        await db.em.persistAndFlush(paymentOrder);
     }
 
 

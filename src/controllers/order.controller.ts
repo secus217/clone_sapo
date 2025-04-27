@@ -257,5 +257,24 @@ const orderController = new Elysia()
                     })
                 }
             )
+            .get("/add-new-payment", async ({body, ordersService}) => {
+
+                    return await ordersService.addPaymentOrder(body.orderId,body.amount,body.paymentMethod)
+                }, {
+                    detail: {
+                        tags: ["Manage order"],
+                        security: [{JwtAuth: []}],
+                        description: "Add new payment for a order"
+                    },
+                    body: t.Object({
+                        orderId: t.Number(),
+                        amount: t.Number(),
+                        paymentMethod: t.Union([
+                            t.Literal("cash"),
+                            t.Literal("bank")
+                        ]),
+                    })
+                }
+            )
     )
 export default orderController;
