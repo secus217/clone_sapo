@@ -4,6 +4,7 @@ import {OrderDetail, Orders, PaymentOrder, ReceiptNote} from "../entities/index"
 import {QueryOrder} from "@mikro-orm/core";
 
 export class OrdersService {
+
     async createOrder(data: {
                           fromStoreId: number,
                           items: Array<{
@@ -45,10 +46,9 @@ export class OrdersService {
             const totalQuantity = data.items.reduce((sum, item) => sum + item.quantity, 0);
             const totalAmount = data.items.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
             const totalAmountAfterDiscount = totalAmount * (100 - (data?.discount as any)) / 100;
-            let payedAmount: any;
-            data.paymentData.map((item) => {
-                payedAmount += item.amount;
-            });
+            const payedAmount = data.paymentData.reduce((total, item) => total + item.amount, 0);
+            console.log("data",data.paymentData)
+            console.log("check remain amount ",totalAmountAfterDiscount,payedAmount)
             const order = em.create(Orders, {
                 storeId: data.fromStoreId,
                 createrId: createrId,
@@ -71,6 +71,7 @@ export class OrdersService {
                     paymentMethod: item.paymentMethod
                 });
             });
+            console.log("paymentOrders", paymentOrders);
 
             const orderDetails = data.items.map(item =>
                 em.create(OrderDetail, {
@@ -104,9 +105,8 @@ export class OrdersService {
                 order,
                 ...orderDetails,
                 receiptNote,
-                paymentOrders
             ]);
-
+            this.savePaymentOrders(paymentOrders,db);
             // Commit transaction
             await em.commit();
 
@@ -121,6 +121,14 @@ export class OrdersService {
         } finally {
             em.clear();
         }
+    }
+    async  savePaymentOrders(paymentOrders:any,db:any) {
+        // Persist từng entity trong mảng
+        for (const paymentOrder of paymentOrders) {
+            await db.persist(paymentOrder);
+        }
+        // Flush tất cả các thay đổi vào database
+        await db.flush();
     }
 
     async updateOrder(
