@@ -256,8 +256,8 @@ const orderController = new Elysia()
                     })
                 }
             )
-            .post("/update-order", async ({user, body, ordersService}) => {
-                return await ordersService.createOrder(body, user.id)
+            .put("/add-new-payment", async ({user, body, ordersService}) => {
+                return await ordersService.addNewPayment(body.orderId,body.paymentData)
             }, {
                 detail: {
                     tags: ["Manage order"],
@@ -265,26 +265,26 @@ const orderController = new Elysia()
                     description: "paymentStatus can only be 'pending' or 'paid'," + "paymentMethod can only be 'cash' or 'bank'"
                 },
                 body: t.Object({
-                    fromStoreId: t.Number(),
-                    items: t.Array(t.Object({
-                            productId: t.Number(),
-                            quantity: t.Number(),
-                            unitPrice: t.Number()
-                        })
-                    ),
-                    customerId: t.Number(),
-                    discount:t.Optional(t.Number()),
-                    paymentData:t.Array(t.Object(
-                        {
-                            amount:t.Number(),
-                            paymentMethod:t.Union([
-                                t.Literal("cash"),
-                                t.Literal("bank")
-                            ])
-                        }
-                    ))
-
-                })
+                    orderId:t.Number(),
+                    paymentData:t.Array(t.Object({
+                        amount:t.Number(),
+                        paymentMethod:t.Union([
+                            t.Literal('cash'),
+                            t.Literal('bank')
+                        ])
+                    }))
+                }),
+            })
+            .put("/update-remain-amount", async ({user, body, ordersService}) => {
+                return await ordersService.updateRemainAmount(body.orderId)
+            }, {
+                detail: {
+                    tags: ["Manage order"],
+                    security: [{JwtAuth: []}],
+                },
+                body: t.Object({
+                    orderId:t.Number()
+                }),
             })
 
 

@@ -131,77 +131,35 @@ export class OrdersService {
         await db.flush();
     }
 
-    async updateOrder(
-        data: {
-            fromStoreId?: number,
-            items?: Array<{
-                productId: number;
-                quantity: number;
-                unitPrice: number;
-            }>,
-            customerId?: number,
-            discount?: number,
-            paymentData?: Array<
-                {
-                    amount?: number,
-                    paymentMethod?: 'cash' | 'bank',
-                }
-            >
-        }, createrId: number, orderId: number
-    ) {
-        const db = await initORM();
-        const order = await db.orders.findOneOrFail({
+    async addNewPayment(orderId:number,paymentData:Array<{
+        amount:number,
+        paymentMethod:'cash'|'bank'
+    }>) {
+        const db=await initORM();
+        const order=await db.orders.findOneOrFail({
             id:orderId
         });
-
-        // Update basic order fields
-        if (data.fromStoreId) order.storeId = data.fromStoreId;
-        if (data.customerId) order.customerId = data.customerId;
-        if (data.discount !== undefined) order.discount = data.discount;
-
-        // Update order items if provided
-        if (data.items && data.items.length > 0) {
-            // Remove existing items
-            await db.em.nativeDelete('OrderItem', { orderId });
-
-            // Create new items
-            for (const item of data.items) {
-                const orderItem = db.em.create('OrderItem', {
-                    orderId,
-                    productId: item.productId,
-                    quantity: item.quantity,
-                    unitPrice: item.unitPrice,
-                    createdBy: createrId
-                });
-                db.em.persist(orderItem);
-            }
+        if(order){
+            paymentData.map(item=>{
+                const payment=new PaymentOrder();
+                payment.orderId=order.id;
+                payment.paymentMethod=item.paymentMethod;
+                payment.amount=item.amount;
+                return db.em.persist(payment);
+            })
         }
-
-        // Update payment data if provided
-        if (data.paymentData && data.paymentData.length > 0) {
-            // Remove existing payments
-            await db.em.nativeDelete('Payment', { orderId });
-
-            // Create new payments
-            for (const payment of data.paymentData) {
-                const paymentEntity = db.em.create('Payment', {
-                    orderId,
-                    amount: payment.amount,
-                    paymentMethod: payment.paymentMethod,
-                    createdBy: createrId
-                });
-                db.em.persist(paymentEntity);
-            }
-        }
-
-        // Update updatedBy and updatedAt
-        order.createrId = createrId;
-        order.updatedAt = new Date();
-
-        // Persist changes
         await db.em.flush();
 
-        return order;
+    }
+    async updateRemainAmount(orderId:number) {
+        const db=await initORM();
+        const order=await db.orders.findOneOrFail({
+            id:orderId
+        })
+        order.remainAmount=0;
+        order.paymentStatus='paid';
+        order.orderStatus='completed';
+        await db.em.persistAndFlush(order);
     }
 
     async getOrderDetail(orderId: number) {
