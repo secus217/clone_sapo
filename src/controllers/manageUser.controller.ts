@@ -25,19 +25,7 @@ const manageUserController = new Elysia()
                 })
 
             })
-            .get("/get-user-by-id", async ({query, manageUserService}) => {
-                return await manageUserService.getUserById(query.userId);
-            }, {
-                detail: {
-                    tags: ["Manage user"],
-                    security: [{JwtAuth: []}]
-                },
-                query: t.Object({
-                    userId: t.Number(),
 
-                })
-
-            })
             .post("/update-user", async ({body, manageUserService}) => {
                     return await manageUserService.updateUser(body.id, body.data);
                 },
@@ -156,6 +144,19 @@ const manageUserController = new Elysia()
                     })
                 }
             )
+            .get("/get-user-by-id", async ({query, manageUserService}) => {
+                return await manageUserService.getUserById(query.userId);
+            }, {
+                detail: {
+                    tags: ["Manage user"],
+                    security: [{JwtAuth: []}]
+                },
+                query: t.Object({
+                    userId: t.Number(),
+
+                })
+
+            })
 
     )
 export default manageUserController;
