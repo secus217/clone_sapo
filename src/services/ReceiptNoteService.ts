@@ -16,6 +16,9 @@ export class ReceiptNoteService {
     }) {
         try {
             const db = await initORM();
+            const noteTien:any=db.tongThuTongChi.findOne({
+                id:1
+            })
             const receiptNote = new ReceiptNote();
             receiptNote.storeId = data.storeId;
             receiptNote.createrId = userId;
@@ -28,6 +31,22 @@ export class ReceiptNoteService {
             receiptNote.nameOfCustomer = data.nameOfCustomer;
             receiptNote.typeOfNote=data.typeOfNote;
             db.em.persistAndFlush(receiptNote);
+            if(receiptNote.type=="THU"){
+                noteTien.TongThu+=receiptNote.totalAmount;
+                if(receiptNote.paymentMethod==="cash"){
+                    noteTien.QuyTienMat+=receiptNote.totalAmount;
+                } else {
+                    noteTien.QuyBank+=receiptNote.totalAmount;
+                }
+            } else{
+                noteTien.TongChi+=receiptNote.totalAmount;
+                if(receiptNote.paymentMethod==="cash"){
+                    noteTien.QuyTienMat-=receiptNote.totalAmount;
+                } else{
+                    noteTien.QuyBank-=receiptNote.totalAmount;
+                }
+            }
+            db.em.persistAndFlush(noteTien);
             return {
                 receiptNote
             };
@@ -116,33 +135,11 @@ export class ReceiptNoteService {
 
     async getTongThu(){
         const db = await initORM();
-        let tongThu=0;
-        let tongChi=0;
-        let tongTienMat=0;
-        let tongTienBank=0;
-        const receiptNotes = await db.receiptNote.findAll();
-        const thu=receiptNotes.filter(note=>note.type === "THU");
-        const chi=receiptNotes.filter(note=>note.type === "CHI");
-        thu.map(item=>{
-            tongThu+=item.totalAmount
+        const noteTien=await db.tongThuTongChi.findOne({
+            id:1
         });
-        chi.map(item=>{
-            tongChi=item.totalAmount;
-        });
-        const tienmat=receiptNotes.filter(note=>note.paymentMethod === "cash");
-        const bank=receiptNotes.filter(note=>note.paymentMethod === "bank");
-        tienmat.map(item=>{
-            tongTienMat+=item.totalAmount;
-        })
-        bank.map(item=>{
-            tongTienBank+=item.totalAmount;
-        })
-
         return{
-            tongThu:tongThu,
-            tongChi:tongChi,
-            tienmat:tongTienMat,
-            bank:tongTienBank
+           noteTien
         }
 
     }

@@ -8,6 +8,18 @@ const storeController = new Elysia()
         group
             .use(storeService)
             .derive(isAdmin())
+            .post("/create-default-store", async ({user,body, storeService}) => {
+                return await storeService.createDefaultStore(user.id,body)
+            }, {
+                detail: {
+                    tags: ["Manage store"],
+                    security: [{JwtAuth: []}],
+                },
+                body: t.Object({
+                    name: t.String(),
+                    address:t.String()
+                })
+            })
             .post("/create-new-store", async ({user,body, storeService}) => {
                 return await storeService.createStore(user.id,body)
             }, {
@@ -17,8 +29,6 @@ const storeController = new Elysia()
                 },
                 body: t.Object({
                     name: t.String(),
-                    phoneNumber:t.String(),
-                    email:t.String(),
                     address:t.String()
                 })
             })

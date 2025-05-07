@@ -29,7 +29,6 @@ const productController = new Elysia()
                     })
                 })
             })
-
     )
     .group("/shared", sharedGroup =>
         sharedGroup
@@ -51,8 +50,8 @@ const productController = new Elysia()
                     limit: t.Optional(t.Number())
                 })
             })
-            .post("/create-new-product", async ({user,body, productService}) => {
-                if(user.role!=="admin"){
+            .post("/create-new-product", async ({user, body, productService}) => {
+                if (user.role !== "admin") {
                     throw new Error("You dont have permission!")
                 }
                 return await productService.createProduct(body)
@@ -70,13 +69,25 @@ const productController = new Elysia()
                     isActive: t.Optional(t.Boolean()),
                     categoryId: t.Optional(t.Number()),
                     imageUrls: t.Optional(t.String()),
-                    initialStoreId: t.Number(),
-                    initialQuantity: t.Number()
+                })
+            })
+            .post("/provide-product-to-inventory", async ({user, body, productService}) => {
+
+                return await productService.provideProductToInventory(body.storeId,body.productId,body.quantity);
+            }, {
+                detail: {
+                    tags: ["Manage product"],
+                    security: [{JwtAuth: []}],
+                },
+                body: t.Object({
+                    storeId: t.Number(),
+                    productId: t.Number(),
+                    quantity: t.Number()
                 })
             })
             .get("/get-all-product-by-store-id", async ({query, productService}) => {
-                const search=query?.search
-                return await productService.getAllProductsByStoreId(query.storeId,search)
+                const search = query?.search
+                return await productService.getAllProductsByStoreId(query.storeId, search)
             }, {
                 detail: {
                     tags: ["Manage product"],
@@ -85,7 +96,7 @@ const productController = new Elysia()
                 },
                 query: t.Object({
                     storeId: t.Optional(t.Number()),
-                    search:t.Optional(t.String())
+                    search: t.Optional(t.String())
                 })
             })
             .put("/delete-product", async ({query, productService}) => {
@@ -117,6 +128,5 @@ const productController = new Elysia()
                 }
 
             })
-
     )
 export default productController;

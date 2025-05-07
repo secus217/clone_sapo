@@ -2,12 +2,33 @@ import {initORM} from "../db";
 import {Elysia} from "elysia";
 
 import {Store, Product, Category, Inventory} from "../entities/index";
+import {TongThuTongChi} from "../entities";
 
 export class StoreService {
-    async createStore(ownerId: number,storeData: {
+    async createDefaultStore(ownerId: number, storeData: {
         name: string,
-        phoneNumber: string,
-        email: string,
+        address: string
+    }) {
+        const db = await initORM();
+            const store = new Store();
+            store.name = storeData.name;
+            store.ownerId=ownerId;
+            store.address=storeData.address
+            await db.em.persistAndFlush(store);
+            const NoteTien=new TongThuTongChi();
+            NoteTien.QuyTienMat=0;
+            NoteTien.QuyBank=0;
+            NoteTien.TongChi=0;
+            NoteTien.TongThu=0;
+            await db.em.persistAndFlush(NoteTien);
+            return{
+                store,
+                NoteTien
+            }
+    }
+
+    async createStore(ownerId: number, storeData: {
+        name: string,
         address: string
     }) {
         const db = await initORM();
@@ -16,40 +37,41 @@ export class StoreService {
             ownerId: ownerId,
             name: storeData.name,
             address: storeData.address,
-            phoneNumber: storeData.phoneNumber,
-            email: storeData.email
         })
         await db.em.persistAndFlush(store);
         return {
             store
         }
     }
+
     async getALlStores(userId: number) {
-        const db=await initORM();
-        const stores= await db.store.find({ownerId:userId});
+        const db = await initORM();
+        const stores = await db.store.find({ownerId: userId});
         if (!stores) {
             throw new Error("Store not found");
         }
-        return{
+        return {
             stores
         }
     }
+
     async getAllStoresOfAdmin() {
-        const db=await initORM();
-        const stores=await db.store.findAll();
-        return{
+        const db = await initORM();
+        const stores = await db.store.findAll();
+        return {
             stores
         }
     }
+
     async getStoreDetails(storeId: number) {
         const db = await initORM();
-        const store = await db.store.findOneOrFail({ id: storeId });
+        const store = await db.store.findOneOrFail({id: storeId});
         const inventories = await db.inventory.find({
             storeId: storeId
         });
         const productIds = inventories.map(inventory => inventory.productId);
         const products = await db.product.find({
-            id: { $in: productIds }
+            id: {$in: productIds}
         });
 
         const productMap = new Map();
@@ -68,7 +90,7 @@ export class StoreService {
         return {
             store,
             inventories: inventoriesWithProductDetails
-        }as any;
+        } as any;
     }
 }
 

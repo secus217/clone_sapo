@@ -2,8 +2,10 @@ import {initORM} from "../db"
 import {Elysia} from "elysia"
 import {OrderDetail, Orders, PaymentOrder, ReceiptNote} from "../entities/index";
 import {QueryOrder} from "@mikro-orm/core";
+import {Store} from "../entities";
 
 export class OrdersService {
+
 
     async createOrder(data: {
                           fromStoreId: number,
@@ -47,8 +49,6 @@ export class OrdersService {
             const totalAmount = data.items.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
             const totalAmountAfterDiscount = totalAmount * (100 - (data?.discount as any)) / 100;
             const payedAmount = data.paymentData.reduce((total, item) => total + item.amount, 0);
-            console.log("data",data.paymentData)
-            console.log("check remain amount ",totalAmountAfterDiscount,payedAmount)
             const order = em.create(Orders, {
                 storeId: data.fromStoreId,
                 createrId: createrId,
@@ -61,17 +61,26 @@ export class OrdersService {
                 orderDetails: [],
                 remainAmount: totalAmountAfterDiscount - payedAmount
             });
+            const NoteTien:any=await db.tongThuTongChi.findOne({
+                id:1
+            });
 
 
             await em.flush();
             const paymentOrders = data.paymentData.map((item) => {
+                NoteTien.TongThu+=item.amount;
+                if(item.paymentMethod === 'cash') {
+                    NoteTien.QuyTienMat+=item.amount;
+                }
+                else {
+                    NoteTien.QuyBank+=item.amount;
+                }
                 return em.create(PaymentOrder, {
                     orderId: order.id,
                     amount: item.amount,
                     paymentMethod: item.paymentMethod
                 });
             });
-            console.log("paymentOrders", paymentOrders);
 
             const orderDetails = data.items.map(item =>
                 em.create(OrderDetail, {
@@ -105,6 +114,7 @@ export class OrdersService {
                 order,
                 ...orderDetails,
                 receiptNote,
+                NoteTien
             ]);
             this.savePaymentOrders(paymentOrders,db);
             // Commit transaction
@@ -122,13 +132,13 @@ export class OrdersService {
             em.clear();
         }
     }
-    async  savePaymentOrders(paymentOrders:any,db:any) {
+    async savePaymentOrders(paymentOrders:any,db:any) {
         // Persist từng entity trong mảng
         for (const paymentOrder of paymentOrders) {
-            await db.persist(paymentOrder);
+            await db.em.persist(paymentOrder);
         }
         // Flush tất cả các thay đổi vào database
-        await db.flush();
+        await db.em.flush();
     }
 
     async addNewPayment(orderId:number,paymentData:Array<{
@@ -139,8 +149,18 @@ export class OrdersService {
         const order=await db.orders.findOneOrFail({
             id:orderId
         });
+        const NoteTien:any=await db.tongThuTongChi.findOne({
+            id:1
+        });
         if(order){
             paymentData.map(item=>{
+                NoteTien.TongThu+=item.amount;
+                if(item.paymentMethod === 'cash') {
+                    NoteTien.QuyTienMat+=item.amount;
+                }
+                else {
+                    NoteTien.QuyBank+=item.amount;
+                }
                 const payment=new PaymentOrder();
                 payment.orderId=order.id;
                 payment.paymentMethod=item.paymentMethod;
@@ -240,6 +260,9 @@ export class OrdersService {
     async deleteOrder(orderId: number) {
         const db = await initORM();
         try {
+            const NoteTien:any=await db.tongThuTongChi.findOne({
+                id: 1
+            });
             const order = await db.orders.findOneOrFail({id: orderId});
             const orderdetails = await db.orderDetail.find({
                 order: {id: orderId}
@@ -254,6 +277,15 @@ export class OrdersService {
                 await db.em.persistAndFlush(inventory);
             })
             await db.em.persistAndFlush(order);
+            const receiptNote=await db.receiptNote.findOne({
+                orderId:orderId
+            });
+            if(receiptNote) {
+                receiptNote.status="cancelled";
+                NoteTien.TongThu-=receiptNote.totalAmount;
+            }
+            await db.em.persistAndFlush(NoteTien);
+
             return {
                 success: true,
                 message: `Order with ID ${orderId} has been deleted successfully.`,

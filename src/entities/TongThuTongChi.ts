@@ -2,11 +2,13 @@ import {Entity, Property, PrimaryKey, ManyToOne, OneToMany, Collection, ManyToMa
 import {BaseEntity} from "./BaseEntity";
 
 @Entity()
-export default class Store extends BaseEntity {
+export default class TongThuTongChi extends BaseEntity {
     @Property()
-    ownerId!: number;
+    TongThu!: number;
     @Property()
-    name!: string;
+    TongChi!: number;
     @Property()
-    address!: string;
+    QuyTienMat!: number;
+    @Property()
+    QuyBank!: number;
 }

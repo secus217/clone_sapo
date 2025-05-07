@@ -14,8 +14,6 @@ export class ProductService {
         isActive?: boolean;
         categoryId?: number;
         imageUrls?: string;
-        initialStoreId: number;
-        initialQuantity: number;
     }) {
         const db = await initORM();
         const em = db.em.fork();
@@ -44,16 +42,9 @@ export class ProductService {
                 imageUrls: data.imageUrls
             });
             await em.persistAndFlush(newProduct);
-            const initialInventory = em.create(Inventory, {
-                storeId: data.initialStoreId,
-                productId: newProduct.id,
-                quantity: data.initialQuantity
-            });
-            await em.persistAndFlush(initialInventory);
             await em.commit();
             return {
-                product: newProduct,
-                initialInventory: initialInventory
+                product: newProduct
             };
         } catch (error: any) {
             await em.rollback();
@@ -62,7 +53,14 @@ export class ProductService {
             em.clear();
         }
     }
-
+    async provideProductToInventory(storeId: number,productId: number,quantity: number) {
+    const db = await initORM();
+    const newInventory=new Inventory();
+    newInventory.productId = productId;
+    newInventory.quantity = quantity;
+    newInventory.storeId = storeId;
+    await db.em.persistAndFlush(newInventory);
+    }
     async updateProduct(productId: number, data: {
         name?: string;
         description?: string;
