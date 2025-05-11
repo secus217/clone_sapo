@@ -41,7 +41,7 @@ export class ExportNoteService {
         });
 
         if (!inventories.length || inventories.length !== product.length) {
-            throw new Error("No such product");
+            throw new Error("Product not found in inventory");
         }
         return inventories;
     }
@@ -144,7 +144,7 @@ export class ExportNoteService {
 
     async getListExportNote(page: number = 1, limit: number = 10, filter: {
         storeId?: number,
-        type?: "xuat"|"nhap"
+        type?: "xuat" | "nhap"
     }) {
         const db = await initORM();
         const offset: number = (page - 1) * limit;
@@ -157,8 +157,8 @@ export class ExportNoteService {
                 ]
             };
         }
-        if(filter.type){
-            where.type=filter.type;
+        if (filter.type) {
+            where.type = filter.type;
         }
         const exportNotes = await db.exportNote.find(where, {
             limit,
@@ -166,6 +166,13 @@ export class ExportNoteService {
         });
         const fromStoreIds = exportNotes.map(item => item.fromStoreId).filter((id): id is number => id !== undefined);
         const toStoreIds = exportNotes.map(item => item.toStoreId).filter((id): id is number => id !== undefined);
+        const createrIds = exportNotes.map(item => item.createrId).filter((id): id is number => id !== undefined);
+        const creaters = await db.user.find({
+            id: {$in: createrIds},
+        },{
+            fields:["id","username","address","phone","role","storeId"]
+            }
+        );
         const fromStores = await db.store.find({
             id: {$in: fromStoreIds}
         })
@@ -174,30 +181,31 @@ export class ExportNoteService {
         });
         const fromStoreMap = new Map(fromStores.map(from => [from.id, from]));
         const toStoreMap = new Map(toStores.map(to => [to.id, to]));
+        const createrMap = new Map(creaters.map(creater => [creater.id, creater]));
 
         return exportNotes.map(item => {
             const fromStore = item.fromStoreId !== undefined ? fromStoreMap.get(item.fromStoreId) : undefined;
             const toStore = item.toStoreId !== undefined ? toStoreMap.get(item.toStoreId) : undefined;
+            const creater = item.createrId !== undefined ? createrMap.get(item.createrId) : undefined;
             return {
-                    ...item,
-                    fromStore: fromStore,
-                    toStore: toStore,
+                ...item,
+                fromStore: fromStore,
+                toStore: toStore,
+                creater: creater
             } as any
         })
     }
 
 
-
-
     async getExportNoteDetail(exportNoteId: number) {
         const db = await initORM();
-        const exportNote =await db.exportNote.findOneOrFail({
+        const exportNote = await db.exportNote.findOneOrFail({
             id: exportNoteId
         });
-        const fromStore=await db.store.findOneOrFail({
+        const fromStore = await db.store.findOneOrFail({
             id: exportNote.fromStoreId
         })
-        const toStore=await db.store.findOneOrFail({
+        const toStore = await db.store.findOneOrFail({
             id: exportNote.toStoreId
         })
         const exportNoteDetails = await db.exportNoteDetail.find({

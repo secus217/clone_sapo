@@ -112,16 +112,28 @@ export class ReceiptNoteService {
             limit,
             offset
         });
+        const storeIds=receiptNotes.map(item=>item.storeId);
+        const stores=await db.store.find({
+            id: {$in: storeIds},
+        });
+        const storeMaps=new Map(stores.map(item=>[item.id, item]));
+        const receiptNoteWithStore=receiptNotes.map(receiptNote => {
+            const store=storeMaps.get(receiptNote.storeId);
+            return{
+                ...receiptNote,
+                store
+            }
+        })
         const totalPages = Math.ceil(total / limit);
         return {
-            data: receiptNotes,
+            data: receiptNoteWithStore,
             meta: {
                 currentPage: page,
                 itemsPerPage: limit,
                 totalItems: total,
                 totalPages: totalPages
             }
-        }
+        } as any
 
     }
 

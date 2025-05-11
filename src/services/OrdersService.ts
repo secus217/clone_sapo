@@ -169,6 +169,9 @@ export class OrdersService {
             })
         }
         await db.em.flush();
+        return{
+            success:true
+        }
 
     }
     async updateRemainAmount(orderId:number) {
@@ -414,6 +417,14 @@ export class OrdersService {
             const customers = await db.user.find({
                 id: {$in: customerIds},
             })
+            const paymentOfOrders=await db.paymentOrder.findAll();
+            const paymentMaps = new Map<number, any[]>();
+            paymentOfOrders.forEach(item => {
+                if (!paymentMaps.has(item.orderId)) {
+                    paymentMaps.set(item.orderId, []);
+                }
+                paymentMaps.get(item.orderId)?.push(item);
+            });
 
             const createrMap = new Map(creaters.map(creater => [creater.id, creater]));
             const customerMap = new Map(customers.map(customer => [customer.id, customer]));
@@ -422,12 +433,14 @@ export class OrdersService {
                 const createrOrder = createrMap.get(order.createrId);
                 const customerOrder = customerMap.get(order.customerId);
                 const storeInfo = storeMap.get(order.storeId);
+                const paymentArrays=paymentMaps.get(order.id);
 
                 return {
                     ...order,
                     storeInfo,
                     creater: createrOrder,
                     customerOrder: customerOrder,
+                    paymentArrays:paymentArrays
                 }
             })
             const totalPages = Math.ceil(total / limit);
