@@ -41,26 +41,7 @@ const orderController = new Elysia()
                     })
                 }
             )
-            .put("/update-shipping-status", async ({body, ordersService}) => {
-                    return await ordersService.updateShippingStatus(body.orderId, body.status)
-                }, {
-                    detail: {
-                        tags: ["Manage order"],
-                        security: [{JwtAuth: []}],
-                        description: "status can be only 'processing' or 'completed' or 'cancelled'"
-                    },
-                    body: t.Object({
-                        orderId: t.Number(),
-                        status: t.Union(
-                            [
-                                t.Literal('processing'),
-                                t.Literal('completed'),
-                                t.Literal('cancelled')
-                            ]
-                        )
-                    })
-                }
-            )
+
             .get("/get-order-by-product-id", async ({query, ordersService}) => {
                 const page = query.page ? parseInt(query.page as string) : 1;
                 const limit=query.limit ? parseInt(query.limit as string) : 10;
@@ -286,6 +267,26 @@ const orderController = new Elysia()
                     orderId:t.Number()
                 }),
             })
+            .put("/update-shipping-status", async ({body, ordersService}) => {
+                    return await ordersService.updateShippingStatus(body.orderId, body.status)
+                }, {
+                    detail: {
+                        tags: ["Manage order"],
+                        security: [{JwtAuth: []}],
+                        description: "status can be only 'processing' or 'completed' or 'cancelled'"
+                    },
+                    body: t.Object({
+                        orderId: t.Number(),
+                        status: t.Union(
+                            [
+                                t.Literal('processing'),
+                                t.Literal('completed'),
+                                t.Literal('cancelled')
+                            ]
+                        )
+                    })
+                }
+            )
 
 
     )
