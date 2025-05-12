@@ -35,9 +35,6 @@ const productController = new Elysia()
             .use(productService)
             .derive(isAdminOrStaff())
             .get("/get-all-product-of-admin", async ({user, query, productService}) => {
-                if (user.role !== "admin") {
-                    return [];
-                }
                 return await productService.getAllProductForAdmin(query.page, query.limit)
             }, {
                 detail: {
