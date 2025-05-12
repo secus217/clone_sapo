@@ -55,6 +55,7 @@ export class OrdersService {
                 quantity: totalQuantity,
                 totalAmount: totalAmountAfterDiscount,
                 orderStatus: payedAmount === totalAmountAfterDiscount ? "completed" : "pending",
+                discount:data.discount,
                 shippingStatus: "processing",
                 customerId: data.customerId,
                 paymentStatus: payedAmount === totalAmountAfterDiscount ? "paid" : "pending",
