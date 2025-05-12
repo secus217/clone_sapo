@@ -10,25 +10,7 @@ const receiptNoteController = new Elysia()
             .derive(isAdmin())
 
 
-            .get("get-all-receipt-note-for-admin", async ({user, query, receiptNoteService}) => {
-                if(user.role!=="admin"){
-                    throw new Error("You dont have permission to do this action")
-                }
-                const filter={
-                    storeId:query.storeId
-                }
-                return await receiptNoteService.getAllReceiptNoteForAdmin(filter,query.page,query.limit)
-            }, {
-                detail: {
-                    tags: ["Receipt note"],
-                    security: [{JwtAuth: []}],
-                },
-                query: t.Object({
-                    storeId: t.Optional(t.Number()),
-                    page:t.Optional(t.Number()),
-                    limit:t.Optional(t.Number())
-                })
-            })
+
     )
     .group("/shared", sharedGroup =>
         sharedGroup
@@ -57,6 +39,25 @@ const receiptNoteController = new Elysia()
                     object:t.Optional(t.String()),
                     nameOfCustomer:t.Optional(t.String()),
                     typeOfNote:t.Optional(t.String())
+                })
+            })
+            .get("get-all-receipt-note-for-admin", async ({user, query, receiptNoteService}) => {
+                if(user.role!=="admin"){
+                    throw new Error("You dont have permission to do this action")
+                }
+                const filter={
+                    storeId:query.storeId
+                }
+                return await receiptNoteService.getAllReceiptNoteForAdmin(filter,query.page,query.limit)
+            }, {
+                detail: {
+                    tags: ["Receipt note"],
+                    security: [{JwtAuth: []}],
+                },
+                query: t.Object({
+                    storeId: t.Optional(t.Number()),
+                    page:t.Optional(t.Number()),
+                    limit:t.Optional(t.Number())
                 })
             })
             .get("get-all-receipt-note", async ({user, query, receiptNoteService}) => {
