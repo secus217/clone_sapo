@@ -97,24 +97,25 @@ export class OrdersService {
             })
 
 
-            const receiptNote = em.create(ReceiptNote, {
-                orderId: order.id,
-                storeId: data.fromStoreId,
-                createrId: createrId,
-                totalAmount: totalAmount,
-                paymentMethod: data.paymentData[0].paymentMethod,
-                status: "completed",
-                type: "THU",
-                object: "customer",
-                nameOfCustomer: customer.username,
-                typeOfNote: "auto"
-            });
+           data.paymentData.forEach((item) => {
+                em.create(ReceiptNote, {
+                    orderId: order.id,
+                    storeId: data.fromStoreId,
+                    createrId: createrId,
+                    totalAmount: item.amount,
+                    paymentMethod: item.paymentMethod,
+                    status: "completed",
+                    type: "THU",
+                    object: "customer",
+                    nameOfCustomer: customer.username,
+                    typeOfNote: "auto"
+                });
+            })
 
 
             await em.persistAndFlush([
                 order,
                 ...orderDetails,
-                receiptNote,
                 NoteTien
             ]);
             this.savePaymentOrders(paymentOrders,db);
@@ -123,8 +124,7 @@ export class OrdersService {
 
             return {
                 order,
-                orderDetails,
-                receiptNote
+                orderDetails
             };
         } catch (e: any) {
             await em.rollback();
@@ -147,9 +147,13 @@ export class OrdersService {
         paymentMethod:'cash'|'bank'
     }>) {
         const db=await initORM();
+        const em = db.em.fork();
         const order=await db.orders.findOneOrFail({
             id:orderId
         });
+        const customer=await db.user.findOne({
+            id:order.customerId
+        })
         const NoteTien:any=await db.tongThuTongChi.findOne({
             id:1
         });
@@ -167,6 +171,20 @@ export class OrdersService {
                 payment.paymentMethod=item.paymentMethod;
                 payment.amount=item.amount;
                 return db.em.persist(payment);
+            })
+            paymentData.forEach(item=>{
+                em.create(ReceiptNote, {
+                    orderId: order.id,
+                    storeId: order.storeId,
+                    createrId: order.createrId,
+                    totalAmount: item.amount,
+                    paymentMethod: item.paymentMethod,
+                    status: "completed",
+                    type: "THU",
+                    object: "customer",
+                    nameOfCustomer: customer?.username || "",
+                    typeOfNote: "auto"
+                });
             })
         }
         await db.em.flush();

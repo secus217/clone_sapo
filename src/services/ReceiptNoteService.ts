@@ -16,8 +16,8 @@ export class ReceiptNoteService {
     }) {
         try {
             const db = await initORM();
-            const noteTien:any=db.tongThuTongChi.findOne({
-                id:1
+            const noteTien: any = db.tongThuTongChi.findOne({
+                id: 1
             })
             const receiptNote = new ReceiptNote();
             receiptNote.storeId = data.storeId;
@@ -29,24 +29,24 @@ export class ReceiptNoteService {
             receiptNote.type = data.type;
             receiptNote.object = data.object;
             receiptNote.nameOfCustomer = data.nameOfCustomer;
-            receiptNote.typeOfNote=data.typeOfNote;
-            db.em.persistAndFlush(receiptNote);
-            if(receiptNote.type=="THU"){
-                noteTien.TongThu+=receiptNote.totalAmount;
-                if(receiptNote.paymentMethod==="cash"){
-                    noteTien.QuyTienMat+=receiptNote.totalAmount;
+            receiptNote.typeOfNote = data.typeOfNote;
+            await db.em.persistAndFlush(receiptNote);
+            if (receiptNote.type == "THU") {
+                noteTien.TongThu += receiptNote.totalAmount;
+                if (receiptNote.paymentMethod === "cash") {
+                    noteTien.QuyTienMat += receiptNote.totalAmount;
                 } else {
-                    noteTien.QuyBank+=receiptNote.totalAmount;
+                    noteTien.QuyBank += receiptNote.totalAmount;
                 }
-            } else{
-                noteTien.TongChi+=receiptNote.totalAmount;
-                if(receiptNote.paymentMethod==="cash"){
-                    noteTien.QuyTienMat-=receiptNote.totalAmount;
-                } else{
-                    noteTien.QuyBank-=receiptNote.totalAmount;
+            } else {
+                noteTien.TongChi += receiptNote.totalAmount;
+                if (receiptNote.paymentMethod === "cash") {
+                    noteTien.QuyTienMat -= receiptNote.totalAmount;
+                } else {
+                    noteTien.QuyBank -= receiptNote.totalAmount;
                 }
             }
-            db.em.persistAndFlush(noteTien);
+            await db.em.persistAndFlush(noteTien);
             return {
                 receiptNote
             };
@@ -112,16 +112,25 @@ export class ReceiptNoteService {
             limit,
             offset
         });
-        const storeIds=receiptNotes.map(item=>item.storeId);
-        const stores=await db.store.find({
+        const storeIds = receiptNotes.map(item => item.storeId);
+        const stores = await db.store.find({
             id: {$in: storeIds},
         });
-        const storeMaps=new Map(stores.map(item=>[item.id, item]));
-        const receiptNoteWithStore=receiptNotes.map(receiptNote => {
-            const store=storeMaps.get(receiptNote.storeId);
-            return{
+        const storeMaps = new Map(stores.map(item => [item.id, item]));
+        const createrIds = receiptNotes.map(item => item.createrId);
+        const creater=await db.user.find({
+            id: {$in: createrIds}
+        },{
+            fields:["id","storeId","address","phone","username","role"]
+        })
+        const createrMap=new Map(creater.map(item => [item.id, item]));
+        const receiptNoteWithStore = receiptNotes.map(receiptNote => {
+            const store = storeMaps.get(receiptNote.storeId);
+            const creater=createrMap.get(receiptNote.createrId);
+            return {
                 ...receiptNote,
-                store
+                store,
+                creater
             }
         })
         const totalPages = Math.ceil(total / limit);
@@ -145,13 +154,13 @@ export class ReceiptNoteService {
 
     }
 
-    async getTongThu(){
+    async getTongThu() {
         const db = await initORM();
-        const noteTien=await db.tongThuTongChi.findOne({
-            id:1
+        const noteTien = await db.tongThuTongChi.findOne({
+            id: 1
         });
-        return{
-           noteTien
+        return {
+            noteTien
         }
 
     }

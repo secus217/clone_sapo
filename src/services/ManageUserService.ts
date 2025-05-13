@@ -146,7 +146,7 @@ export class ManageUserService {
     }
     async getAllStaff(page = 1, limit = 10,search?:string){
         let where:any={};
-        where.role="staff"
+        where.role = { $in: ["staff", "user"] };
         if(search){
             where.username={$ilike:`%${search}%`};
         }
