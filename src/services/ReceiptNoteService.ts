@@ -16,7 +16,7 @@ export class ReceiptNoteService {
     }) {
         try {
             const db = await initORM();
-            const noteTien: any = db.tongThuTongChi.findOne({
+            const noteTien: any =await db.tongThuTongChi.findOne({
                 id: 1
             })
             const receiptNote = new ReceiptNote();
