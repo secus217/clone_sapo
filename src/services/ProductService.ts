@@ -55,11 +55,21 @@ export class ProductService {
     }
     async provideProductToInventory(storeId: number,productId: number,quantity: number) {
     const db = await initORM();
-    const newInventory=new Inventory();
-    newInventory.productId = productId;
-    newInventory.quantity = quantity;
-    newInventory.storeId = storeId;
-    await db.em.persistAndFlush(newInventory);
+    const inven:any=await db.inventory.findOne({
+        storeId:storeId,
+        productId:productId,
+    });
+    if(!inven) {
+        const newInventory=new Inventory();
+        newInventory.productId = productId;
+        newInventory.quantity = quantity;
+        newInventory.storeId = storeId;
+        await db.em.persistAndFlush(newInventory);
+    } else{
+        inven.quantity += quantity;
+    }
+    await db.em.persistAndFlush(inven);
+
     }
     async updateProduct(productId: number, data: {
         name?: string;
