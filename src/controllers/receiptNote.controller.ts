@@ -42,9 +42,6 @@ const receiptNoteController = new Elysia()
                 })
             })
             .get("get-all-receipt-note-for-admin", async ({user, query, receiptNoteService}) => {
-                if(user.role!=="admin"){
-                    throw new Error("You dont have permission to do this action")
-                }
                 const filter={
                     storeId:query.storeId
                 }
