@@ -299,13 +299,16 @@ export class OrdersService {
                 await db.em.persistAndFlush(inventory);
             })
             await db.em.persistAndFlush(order);
-            const receiptNote=await db.receiptNote.findOne({
+            const receiptNotes=await db.receiptNote.find({
                 orderId:orderId
             });
-            if(receiptNote) {
-                receiptNote.status="cancelled";
-                NoteTien.TongThu-=receiptNote.totalAmount;
+            if(receiptNotes) {
+                receiptNotes.forEach(receiptNote => {
+                    receiptNote.status="cancelled";
+                    NoteTien.TongThu-=receiptNote.totalAmount;
+                })
             }
+            await db.em.persistAndFlush(receiptNotes);
             await db.em.persistAndFlush(NoteTien);
 
             return {
