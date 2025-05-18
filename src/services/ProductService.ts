@@ -214,15 +214,14 @@ export class ProductService {
 
         // Chuyển đổi chuỗi ngày thành đối tượng Date
         const selectedDate = new Date(date);
-        const nextDay = new Date(selectedDate);
-        nextDay.setDate(selectedDate.getDate() + 1);
+        const currentDate = new Date(); // Ngày hiện tại
 
         // Lấy các đơn hàng trong ngày được chọn
         const orders = await db.orders.findAll({
             where: {
                 createdAt: {
                     $gte: selectedDate,
-                    $lt: nextDay
+                    $lte: currentDate
                 }
             }
         });
