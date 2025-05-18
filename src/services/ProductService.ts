@@ -165,7 +165,9 @@ export class ProductService {
             inventories = await db.inventory.find({});
             const productIds = inventories.map((item: any) => item.productId);
             const storeIds = inventories.map((item: any) => item.storeId);
-            const products = await db.product.find({id: {$in: productIds}});
+            const products = await db.product.find({id: {$in: productIds}},{
+                populate:["category"]
+            });
             const stores = await db.store.find({id: {$in: storeIds}});
             const productsMap = new Map(products.map((item: any) => [item.id, item]));
             const storeMap = new Map(stores.map(item => [item.id, item]));
