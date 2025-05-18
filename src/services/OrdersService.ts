@@ -55,7 +55,7 @@ export class OrdersService {
                 quantity: totalQuantity,
                 totalAmount: totalAmountAfterDiscount,
                 orderStatus: payedAmount === totalAmountAfterDiscount ? "completed" : "pending",
-                discount:data.discount,
+                discount: data.discount,
                 shippingStatus: "processing",
                 customerId: data.customerId,
                 paymentStatus: payedAmount === totalAmountAfterDiscount ? "paid" : "pending",
@@ -68,23 +68,22 @@ export class OrdersService {
                 toStoreId: null,
                 createrId: createrId,
                 totalQuantity: totalQuantity,
-                status:"completed",
+                status: "completed",
                 note: "",
                 type: "xuat"
             });
-            const NoteTien:any=await db.tongThuTongChi.findOne({
-                id:1
+            const NoteTien: any = await db.tongThuTongChi.findOne({
+                id: 1
             });
 
 
             await em.flush();
             const paymentOrders = data.paymentData.map((item) => {
-                NoteTien.TongThu+=item.amount;
-                if(item.paymentMethod === 'cash') {
-                    NoteTien.QuyTienMat+=item.amount;
-                }
-                else {
-                    NoteTien.QuyBank+=item.amount;
+                NoteTien.TongThu += item.amount;
+                if (item.paymentMethod === 'cash') {
+                    NoteTien.QuyTienMat += item.amount;
+                } else {
+                    NoteTien.QuyBank += item.amount;
                 }
                 return em.create(PaymentOrder, {
                     orderId: order.id,
@@ -114,7 +113,7 @@ export class OrdersService {
             })
 
 
-           data.paymentData.forEach((item) => {
+            data.paymentData.forEach((item) => {
                 em.create(ReceiptNote, {
                     orderId: order.id,
                     storeId: data.fromStoreId,
@@ -136,7 +135,7 @@ export class OrdersService {
                 NoteTien,
                 ...exportNoteDetail
             ]);
-            this.savePaymentOrders(paymentOrders,db);
+            this.savePaymentOrders(paymentOrders, db);
             // Commit transaction
             await em.commit();
 
@@ -151,7 +150,8 @@ export class OrdersService {
             em.clear();
         }
     }
-    async savePaymentOrders(paymentOrders:any,db:any) {
+
+    async savePaymentOrders(paymentOrders: any, db: any) {
         // Persist từng entity trong mảng
         for (const paymentOrder of paymentOrders) {
             await db.em.persist(paymentOrder);
@@ -160,37 +160,36 @@ export class OrdersService {
         await db.em.flush();
     }
 
-    async addNewPayment(orderId:number,paymentData:Array<{
-        amount:number,
-        paymentMethod:'cash'|'bank'
+    async addNewPayment(orderId: number, paymentData: Array<{
+        amount: number,
+        paymentMethod: 'cash' | 'bank'
     }>) {
-        const db=await initORM();
+        const db = await initORM();
         const em = db.em.fork();
-        const order=await db.orders.findOneOrFail({
-            id:orderId
+        const order = await db.orders.findOneOrFail({
+            id: orderId
         });
-        const customer=await db.user.findOne({
-            id:order.customerId
+        const customer = await db.user.findOne({
+            id: order.customerId
         })
-        const NoteTien:any=await db.tongThuTongChi.findOne({
-            id:1
+        const NoteTien: any = await db.tongThuTongChi.findOne({
+            id: 1
         });
-        if(order){
-            paymentData.map(item=>{
-                NoteTien.TongThu+=item.amount;
-                if(item.paymentMethod === 'cash') {
-                    NoteTien.QuyTienMat+=item.amount;
+        if (order) {
+            paymentData.map(item => {
+                NoteTien.TongThu += item.amount;
+                if (item.paymentMethod === 'cash') {
+                    NoteTien.QuyTienMat += item.amount;
+                } else {
+                    NoteTien.QuyBank += item.amount;
                 }
-                else {
-                    NoteTien.QuyBank+=item.amount;
-                }
-                const payment=new PaymentOrder();
-                payment.orderId=order.id;
-                payment.paymentMethod=item.paymentMethod;
-                payment.amount=item.amount;
+                const payment = new PaymentOrder();
+                payment.orderId = order.id;
+                payment.paymentMethod = item.paymentMethod;
+                payment.amount = item.amount;
                 return db.em.persist(payment);
             })
-            paymentData.forEach(item=>{
+            paymentData.forEach(item => {
                 em.create(ReceiptNote, {
                     orderId: order.id,
                     storeId: order.storeId,
@@ -206,19 +205,20 @@ export class OrdersService {
             })
         }
         await db.em.flush();
-        return{
-            success:true
+        return {
+            success: true
         }
 
     }
-    async updateRemainAmount(orderId:number) {
-        const db=await initORM();
-        const order=await db.orders.findOneOrFail({
-            id:orderId
+
+    async updateRemainAmount(orderId: number) {
+        const db = await initORM();
+        const order = await db.orders.findOneOrFail({
+            id: orderId
         })
-        order.remainAmount=0;
-        order.paymentStatus='paid';
-        order.orderStatus='completed';
+        order.remainAmount = 0;
+        order.paymentStatus = 'paid';
+        order.orderStatus = 'completed';
         await db.em.persistAndFlush(order);
     }
 
@@ -300,7 +300,7 @@ export class OrdersService {
     async deleteOrder(orderId: number) {
         const db = await initORM();
         try {
-            const NoteTien:any=await db.tongThuTongChi.findOne({
+            const NoteTien: any = await db.tongThuTongChi.findOne({
                 id: 1
             });
             const order = await db.orders.findOneOrFail({id: orderId});
@@ -317,14 +317,21 @@ export class OrdersService {
                 await db.em.persistAndFlush(inventory);
             })
             await db.em.persistAndFlush(order);
-            const receiptNotes=await db.receiptNote.find({
-                orderId:orderId
+            const receiptNotes = await db.receiptNote.find({
+                orderId: orderId
             });
-            if(receiptNotes) {
+            if (receiptNotes) {
                 receiptNotes.forEach(receiptNote => {
-                    receiptNote.status="cancelled";
-                    NoteTien.TongThu-=receiptNote.totalAmount;
+                    receiptNote.status = "cancelled";
+                    NoteTien.TongThu -= receiptNote.totalAmount;
                 })
+            }
+            const exportNote = await db.exportNote.findOne({
+                orderId: orderId
+            })
+            if (exportNote) {
+                exportNote.status = "cancelled";
+                await db.em.persistAndFlush(exportNote);
             }
             await db.em.persistAndFlush(receiptNotes);
             await db.em.persistAndFlush(NoteTien);
@@ -457,7 +464,7 @@ export class OrdersService {
             const customers = await db.user.find({
                 id: {$in: customerIds},
             })
-            const paymentOfOrders=await db.paymentOrder.findAll();
+            const paymentOfOrders = await db.paymentOrder.findAll();
             const paymentMaps = new Map<number, any[]>();
             paymentOfOrders.forEach(item => {
                 if (!paymentMaps.has(item.orderId)) {
@@ -473,14 +480,14 @@ export class OrdersService {
                 const createrOrder = createrMap.get(order.createrId);
                 const customerOrder = customerMap.get(order.customerId);
                 const storeInfo = storeMap.get(order.storeId);
-                const paymentArrays=paymentMaps.get(order.id);
+                const paymentArrays = paymentMaps.get(order.id);
 
                 return {
                     ...order,
                     storeInfo,
                     creater: createrOrder,
                     customerOrder: customerOrder,
-                    paymentArrays:paymentArrays
+                    paymentArrays: paymentArrays
                 }
             })
             const totalPages = Math.ceil(total / limit);
@@ -497,7 +504,6 @@ export class OrdersService {
         }
 
     }
-
 
 
     async getAllRevenue() {
