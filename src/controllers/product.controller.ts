@@ -107,13 +107,16 @@ const productController = new Elysia()
                     productId: t.Number()
                 })
             })
-            .get("/top-product", async ({productService}) => {
-                return await productService.getTopProduct()
+            .get("/top-product", async ({productService,query}) => {
+                return await productService.getTopProduct(query.date)
             }, {
                 detail: {
                     tags: ["Manage product"],
                     security: [{JwtAuth: []}],
-                }
+                },
+                query: t.Object({
+                    date: t.String()
+                })
 
             })
             .get("/near-order", async ({productService}) => {

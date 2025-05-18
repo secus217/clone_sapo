@@ -209,9 +209,34 @@ export class ProductService {
         }
     }
 
-    async getTopProduct() {
+    async getTopProduct(date: string) {
         const db = await initORM();
-        const orderDetails = await db.orderDetail.findAll();
+
+        // Chuyển đổi chuỗi ngày thành đối tượng Date
+        const selectedDate = new Date(date);
+        const nextDay = new Date(selectedDate);
+        nextDay.setDate(selectedDate.getDate() + 1);
+
+        // Lấy các đơn hàng trong ngày được chọn
+        const orders = await db.orders.findAll({
+            where: {
+                createdAt: {
+                    $gte: selectedDate,
+                    $lt: nextDay
+                }
+            }
+        });
+
+        // Lấy orderIds từ các đơn hàng trong ngày
+        const orderIds = orders.map((order:any) => order.id);
+
+        // Lấy chi tiết đơn hàng chỉ cho các đơn hàng trong ngày đó
+        const orderDetails = await db.orderDetail.findAll({
+            where: {
+                order: {id:{$in: orderIds}}
+            }
+        });
+
         const quantityMap: any = {};
         orderDetails.forEach(orderDetail => {
             if (!quantityMap[orderDetail.productId]) {
@@ -219,21 +244,24 @@ export class ProductService {
             }
             quantityMap[orderDetail.productId] += orderDetail.quantity;
         });
+
         const sortedProductIds = Object.entries(quantityMap)
             .sort((a: any, b: any) => b[1] - a[1]).slice(0, 5);
+
         const topProductsIds: any[] = sortedProductIds.map(item => item[0]);
+
         const products = await db.product.find({
             id: {$in: topProductsIds}
         });
+
         return topProductsIds.map(id => {
-            const product:any = products.find(item => item.id == id);
-            const quantity=quantityMap[id];
+            const product: any = products.find(item => item.id == id);
+            const quantity = quantityMap[id];
             return {
                 ...product,
                 quantity
             }
         });
-
     }
     async nearOrder(){
         const db = await initORM();
