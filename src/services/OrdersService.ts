@@ -2,7 +2,7 @@ import {initORM} from "../db"
 import {Elysia} from "elysia"
 import {OrderDetail, Orders, PaymentOrder, ReceiptNote} from "../entities/index";
 import {QueryOrder} from "@mikro-orm/core";
-import {Store} from "../entities";
+import {ExportNote, ExportNoteDetail, Store} from "../entities";
 
 export class OrdersService {
 
@@ -62,6 +62,16 @@ export class OrdersService {
                 orderDetails: [],
                 remainAmount: totalAmountAfterDiscount - payedAmount
             });
+            const exportNote = em.create(ExportNote, {
+                orderId: order.id,
+                fromStoreId: data.fromStoreId,
+                toStoreId: null,
+                createrId: createrId,
+                totalQuantity: totalQuantity,
+                status:"completed",
+                note: "",
+                type: "xuat"
+            });
             const NoteTien:any=await db.tongThuTongChi.findOne({
                 id:1
             });
@@ -92,6 +102,13 @@ export class OrdersService {
                     totalPrice: item.quantity * item.unitPrice
                 })
             );
+            const exportNoteDetail = data.items.map(item =>
+                em.create(ExportNoteDetail, {
+                    exportNoteId: exportNote.id,
+                    productId: item.productId,
+                    quantity: item.quantity
+                })
+            );
             const customer = await db.user.findOneOrFail({
                 id: data.customerId
             })
@@ -116,7 +133,8 @@ export class OrdersService {
             await em.persistAndFlush([
                 order,
                 ...orderDetails,
-                NoteTien
+                NoteTien,
+                ...exportNoteDetail
             ]);
             this.savePaymentOrders(paymentOrders,db);
             // Commit transaction

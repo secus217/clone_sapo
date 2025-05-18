@@ -14,7 +14,7 @@ export default class ExportNote extends BaseEntity{
     @Property()
     totalQuantity!:number;
     @Property({default:"pending"})
-    status!: 'pending'|'completed';
+    status!: 'pending'|'completed'|'cancelled';
     @Property({nullable: true})
     note?: string;
     @Property({nullable:true})
