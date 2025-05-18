@@ -202,10 +202,10 @@ export class ExportNoteService {
         const exportNote = await db.exportNote.findOneOrFail({
             id: exportNoteId
         });
-        const fromStore = await db.store.findOneOrFail({
+        const fromStore = await db.store.findOne({
             id: exportNote.fromStoreId
         })
-        const toStore = await db.store.findOneOrFail({
+        const toStore = await db.store.findOne({
             id: exportNote.toStoreId
         })
         const exportNoteDetails = await db.exportNoteDetail.find({
@@ -222,7 +222,7 @@ export class ExportNoteService {
                 ...detail,
                 product,
                 fromStore: fromStore,
-                toStore: toStore
+                toStore: toStore || null
             }
         });
         return {

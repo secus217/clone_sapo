@@ -69,7 +69,7 @@ export class OrdersService {
                 createrId: createrId,
                 totalQuantity: totalQuantity,
                 status: "completed",
-                note: "",
+                note: `Automatically generated from order with id ${order.id}`,
                 type: "xuat"
             });
             const NoteTien: any = await db.tongThuTongChi.findOne({

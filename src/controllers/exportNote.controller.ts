@@ -20,18 +20,7 @@ const exportNoteController = new Elysia()
                 })
             })
 
-            .get("/get-export-note-detail-by-id", async ({query, exportNoteService}) => {
 
-                return await exportNoteService.getExportNoteDetail(query.exportNoteId);
-            }, {
-                detail: {
-                    tags: ["Export note"],
-                    security: [{JwtAuth: []}]
-                },
-                query: t.Object({
-                    exportNoteId: t.Number()
-                })
-            })
     )
     .group("/shared", sharedGroup =>
         sharedGroup
@@ -75,6 +64,18 @@ const exportNoteController = new Elysia()
                         t.Literal("nhap"),
                         t.Literal("xuat")
                     ]))
+                })
+            })
+            .get("/get-export-note-detail-by-id", async ({query, exportNoteService}) => {
+
+                return await exportNoteService.getExportNoteDetail(query.exportNoteId);
+            }, {
+                detail: {
+                    tags: ["Export note"],
+                    security: [{JwtAuth: []}]
+                },
+                query: t.Object({
+                    exportNoteId: t.Number()
                 })
             })
     )
