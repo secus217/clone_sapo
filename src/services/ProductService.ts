@@ -60,18 +60,23 @@ export class ProductService {
         productId:productId,
     });
     if(!inven) {
+        console.log("chay vao day")
         const newInventory=new Inventory();
         newInventory.productId = productId;
         newInventory.quantity = quantity;
         newInventory.storeId = storeId;
         await db.em.persistAndFlush(newInventory);
+        return {
+            success: true
+        };
     } else{
         inven.quantity += quantity;
+        await db.em.persistAndFlush(inven);
+        return {
+            success: true
+        }
     }
-    await db.em.persistAndFlush(inven);
-    return {
-        success: true
-    }
+
 
     }
     async updateProduct(productId: number, data: {
