@@ -69,6 +69,9 @@ export class ProductService {
         inven.quantity += quantity;
     }
     await db.em.persistAndFlush(inven);
+    return {
+        success: true
+    }
 
     }
     async updateProduct(productId: number, data: {
