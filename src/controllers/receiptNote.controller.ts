@@ -8,16 +8,13 @@ const receiptNoteController = new Elysia()
         group
             .use(receiptNoteService)
             .derive(isAdmin())
-
-
-
     )
     .group("/shared", sharedGroup =>
         sharedGroup
             .use(receiptNoteService)
             .derive(isAdminOrStaff())
             .post("/create-new-receipt", async ({user, body, receiptNoteService}) => {
-                return await receiptNoteService.createNewReceiptNote(user.id,body)
+                return await receiptNoteService.createNewReceiptNote(user.id, body)
             }, {
                 detail: {
                     tags: ["Receipt note"],
@@ -32,20 +29,20 @@ const receiptNoteController = new Elysia()
                         t.Literal("bank")
                     ]),
                     note: t.String(),
-                    type:t.Union([
+                    type: t.Union([
                         t.Literal("THU"),
                         t.Literal("CHI")
                     ]),
-                    object:t.Optional(t.String()),
-                    nameOfCustomer:t.Optional(t.String()),
-                    typeOfNote:t.Optional(t.String())
+                    object: t.Optional(t.String()),
+                    nameOfCustomer: t.Optional(t.String()),
+                    typeOfNote: t.Optional(t.String())
                 })
             })
             .get("get-all-receipt-note-for-admin", async ({user, query, receiptNoteService}) => {
-                const filter={
-                    storeId:query.storeId
+                const filter = {
+                    storeId: query.storeId
                 }
-                return await receiptNoteService.getAllReceiptNoteForAdmin(filter,query.page,query.limit)
+                return await receiptNoteService.getAllReceiptNoteForAdmin(filter, query.page, query.limit)
             }, {
                 detail: {
                     tags: ["Receipt note"],
@@ -53,12 +50,12 @@ const receiptNoteController = new Elysia()
                 },
                 query: t.Object({
                     storeId: t.Optional(t.Number()),
-                    page:t.Optional(t.Number()),
-                    limit:t.Optional(t.Number())
+                    page: t.Optional(t.Number()),
+                    limit: t.Optional(t.Number())
                 })
             })
             .get("get-all-receipt-note", async ({user, query, receiptNoteService}) => {
-                return await receiptNoteService.getAllReceiptNotes(query.storeId,query.page,query.limit)
+                return await receiptNoteService.getAllReceiptNotes(query.storeId, query.page, query.limit)
             }, {
                 detail: {
                     tags: ["Receipt note"],
@@ -66,8 +63,8 @@ const receiptNoteController = new Elysia()
                 },
                 query: t.Object({
                     storeId: t.Number(),
-                    page:t.Optional(t.Number()),
-                    limit:t.Optional(t.Number())
+                    page: t.Optional(t.Number()),
+                    limit: t.Optional(t.Number())
                 })
             })
             .get("get-all-receipt-note-by-order-id", async ({user, query, receiptNoteService}) => {
@@ -89,6 +86,16 @@ const receiptNoteController = new Elysia()
                     security: [{JwtAuth: []}],
                 }
             })
-
+            .delete("delete-receipt-note", async ({user, body, receiptNoteService}) => {
+                return await receiptNoteService.deletePhieuThu(body.receipNoteId)
+            }, {
+                detail: {
+                    tags: ["Receipt note"],
+                    security: [{JwtAuth: []}],
+                },
+                body: t.Object({
+                    receipNoteId: t.Number(),
+                })
+            })
     )
 export default receiptNoteController;

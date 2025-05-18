@@ -164,6 +164,16 @@ export class ReceiptNoteService {
         }
 
     }
+    async deletePhieuThu(id:any){
+        const db = await initORM();
+        const receiptNote = await db.receiptNote.findOneOrFail({
+            id: id
+        })
+        await db.em.removeAndFlush(receiptNote);
+        return{
+            success: true
+        }
+    }
 
 }
 
