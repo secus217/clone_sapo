@@ -544,7 +544,7 @@ export class OrdersService {
 
             // Tạo điều kiện query động
             const whereCondition: any = {
-                shippingStatus: "completed",
+                isDeleted: false,
                 createdAt: {
                     $gte: currentDate,
                     $lt: nextDate,
