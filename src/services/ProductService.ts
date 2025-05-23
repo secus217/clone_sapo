@@ -213,7 +213,8 @@ export class ProductService {
             data: products,
             page,
             limit,
-            totalPage
+            totalPage,
+            total:total
         }
     }
 

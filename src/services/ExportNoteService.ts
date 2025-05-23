@@ -160,7 +160,7 @@ export class ExportNoteService {
         if (filter.type) {
             where.type = filter.type;
         }
-        const exportNotes = await db.exportNote.find(where, {
+        const [exportNotes,total] = await db.exportNote.findAndCount(where, {
             limit,
             offset
         });
@@ -182,7 +182,7 @@ export class ExportNoteService {
         const fromStoreMap = new Map(fromStores.map(from => [from.id, from]));
         const toStoreMap = new Map(toStores.map(to => [to.id, to]));
         const createrMap = new Map(creaters.map(creater => [creater.id, creater]));
-
+        const totalPage=Math.ceil(total/limit);
         return exportNotes.map(item => {
             const fromStore = item.fromStoreId !== undefined ? fromStoreMap.get(item.fromStoreId) : undefined;
             const toStore = item.toStoreId !== undefined ? toStoreMap.get(item.toStoreId) : undefined;
@@ -191,7 +191,10 @@ export class ExportNoteService {
                 ...item,
                 fromStore: fromStore,
                 toStore: toStore,
-                creater: creater
+                creater: creater,
+                currentPage:page,
+                limit:limit,
+                total:total
             } as any
         })
     }
