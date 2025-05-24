@@ -5,7 +5,7 @@ import {BaseEntity} from "./BaseEntity";
 export default class ExportNote extends BaseEntity{
     @Property({nullable:true})
     orderId?: number;
-    @Property()
+    @Property({nullable:true})
     fromStoreId!: number;
     @Property({nullable:true})
     toStoreId?: number;

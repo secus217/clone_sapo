@@ -3,6 +3,7 @@ import {Elysia} from "elysia";
 import Product from "../entities/Product";
 import Category from "../entities/Category";
 import Inventory from "../entities/Inventory";
+import {ExportNote, ReceiptNote} from "../entities";
 
 export class ProductService {
     async createProduct(data: {
@@ -53,19 +54,26 @@ export class ProductService {
             em.clear();
         }
     }
-    async provideProductToInventory(storeId: number,productId: number,quantity: number) {
+    async provideProductToInventory(userId:number,storeId: number,productId: number,quantity: number) {
     const db = await initORM();
     const inven:any=await db.inventory.findOne({
         storeId:storeId,
         productId:productId,
     });
     if(!inven) {
-        console.log("chay vao day")
         const newInventory=new Inventory();
         newInventory.productId = productId;
         newInventory.quantity = quantity;
         newInventory.storeId = storeId;
         await db.em.persistAndFlush(newInventory);
+        const newExportNote=new ExportNote();
+        newExportNote.toStoreId=storeId;
+        newExportNote.createrId=userId;
+        newExportNote.totalQuantity=quantity;
+        newExportNote.status='completed';
+        newExportNote.note="Tự động tạo cùng việc cung cấp hàng tới kho"
+        newExportNote.type='nhap';
+        await db.em.persistAndFlush(newExportNote);
         return {
             success: true
         };
@@ -132,7 +140,9 @@ export class ProductService {
             await em.persistAndFlush(product);
 
             await em.commit();
-            return await em.findOne(Product, {id: productId}, {populate: ['category']});
+            return {
+                success: true
+            };
         } catch (error: any) {
             await em.rollback();
             throw new Error(`Failed to update product: ${error.message}`);

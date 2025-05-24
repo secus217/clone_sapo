@@ -70,7 +70,7 @@ const productController = new Elysia()
             })
             .post("/provide-product-to-inventory", async ({user, body, productService}) => {
 
-                return await productService.provideProductToInventory(body.storeId,body.productId,body.quantity);
+                return await productService.provideProductToInventory(user.id,body.storeId,body.productId,body.quantity);
             }, {
                 detail: {
                     tags: ["Manage product"],
