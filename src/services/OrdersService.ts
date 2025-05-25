@@ -62,6 +62,7 @@ export class OrdersService {
                 orderDetails: [],
                 remainAmount: totalAmountAfterDiscount - payedAmount
             });
+            await db.em.persistAndFlush(order);
             const exportNote = em.create(ExportNote, {
                 orderId: order.id,
                 fromStoreId: data.fromStoreId,
@@ -69,7 +70,7 @@ export class OrdersService {
                 createrId: createrId,
                 totalQuantity: totalQuantity,
                 status: "completed",
-                note: `Automatically generated from order with id ${order.id}`,
+                note: `Tự động tạo cùng đơn hàng SON${order.id}`,
                 type: "xuat"
             });
             const NoteTien: any = await db.tongThuTongChi.findOne({
@@ -166,7 +167,7 @@ export class OrdersService {
     }>) {
         const db = await initORM();
         const em = db.em.fork();
-        const order = await db.orders.findOneOrFail({
+        const order:any = await db.orders.findOneOrFail({
             id: orderId
         });
         const customer = await db.user.findOne({
@@ -176,6 +177,7 @@ export class OrdersService {
             id: 1
         });
         if (order) {
+            let totalAmount=0;
             paymentData.map(item => {
                 NoteTien.TongThu += item.amount;
                 if (item.paymentMethod === 'cash') {
@@ -187,6 +189,7 @@ export class OrdersService {
                 payment.orderId = order.id;
                 payment.paymentMethod = item.paymentMethod;
                 payment.amount = item.amount;
+                totalAmount += item.amount;
                 return db.em.persist(payment);
             })
             paymentData.forEach(item => {
@@ -202,7 +205,14 @@ export class OrdersService {
                     nameOfCustomer: customer?.username || "",
                     typeOfNote: "auto"
                 });
-            })
+            });
+            order.remainAmount-=totalAmount;
+            await db.em.persistAndFlush(order);
+        }
+        if(order.remainAmount <= 0) {
+            order.paymentStatus='paid';
+            order.orderStatus='completed';
+            await db.em.persistAndFlush(order);
         }
         await db.em.flush();
         return {
