@@ -1,7 +1,7 @@
 import {initORM} from "../db"
 import {Elysia} from "elysia"
 import {OrderDetail, Orders, PaymentOrder, ReceiptNote} from "../entities/index";
-import {QueryOrder} from "@mikro-orm/core";
+import {QueryOrder, raw} from "@mikro-orm/core";
 import {ExportNote, ExportNoteDetail, Store} from "../entities";
 
 export class OrdersService {
@@ -192,20 +192,21 @@ export class OrdersService {
                 totalAmount += item.amount;
                 return db.em.persist(payment);
             })
-            paymentData.forEach(item => {
-                em.create(ReceiptNote, {
-                    orderId: order.id,
-                    storeId: order.storeId,
-                    createrId: order.createrId,
-                    totalAmount: item.amount,
-                    paymentMethod: item.paymentMethod,
-                    status: "completed",
-                    type: "THU",
-                    object: "customer",
-                    nameOfCustomer: customer?.username || "",
-                    typeOfNote: "auto"
-                });
+           const newReceiptNoteArray= paymentData.map(item => {
+                const newReceiptNote =new ReceiptNote();
+                newReceiptNote.orderId = order.id;
+                newReceiptNote.storeId=order.storeId;
+                newReceiptNote.createrId=order.createrId;
+                newReceiptNote.totalAmount=item.amount;
+                newReceiptNote.paymentMethod=item.paymentMethod;
+                newReceiptNote.status="completed"
+                newReceiptNote.type="THU";
+                newReceiptNote.object="customer";
+                newReceiptNote.nameOfCustomer= customer?.username || "";
+                newReceiptNote.typeOfNote="auto";
+                return newReceiptNote;
             });
+            await db.em.persistAndFlush(newReceiptNoteArray);
             order.remainAmount-=totalAmount;
             await db.em.persistAndFlush(order);
         }
