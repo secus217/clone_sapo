@@ -162,7 +162,8 @@ export class ExportNoteService {
         }
         const [exportNotes,total] = await db.exportNote.findAndCount(where, {
             limit,
-            offset
+            offset,
+            orderBy:{createdAt:"DESC"}
         });
         const fromStoreIds = exportNotes.map(item => item.fromStoreId).filter((id): id is number => id !== undefined);
         const toStoreIds = exportNotes.map(item => item.toStoreId).filter((id): id is number => id !== undefined);

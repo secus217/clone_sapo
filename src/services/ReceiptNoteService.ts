@@ -110,7 +110,8 @@ export class ReceiptNoteService {
         }
         const [receiptNotes, total] = await db.receiptNote.findAndCount(where, {
             limit,
-            offset
+            offset,
+            orderBy:{createdAt:"DESC"}
         });
         const storeIds = receiptNotes.map(item => item.storeId);
         const stores = await db.store.find({
