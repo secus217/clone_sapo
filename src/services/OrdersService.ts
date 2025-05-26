@@ -236,6 +236,9 @@ export class OrdersService {
     async getOrderDetail(orderId: number) {
         const db = await initORM();
         const order = await db.orders.findOneOrFail({id: orderId}, {populate: ["orderDetails"]});
+        const store=await db.store.findOneOrFail({
+            id: order.storeId
+        })
         const customer = await db.user.findOneOrFail({
             id: order.customerId,
         }, {
@@ -268,7 +271,8 @@ export class OrdersService {
                     ...orderWithoutDetails,
                     orderDetails: orderDetailsWithProducts,
                     customer: customer,
-                    creater: creater
+                    creater: creater,
+                    store
                 } as any
             }
         }
@@ -460,7 +464,7 @@ export class OrdersService {
             const [order, total] = await db.orders.findAndCount(where, {
                 limit,
                 offset,
-                orderBy: {id: QueryOrder.ASC},
+                orderBy: {id: QueryOrder.DESC},
                 populate: ["orderDetails"]
             })
             const storeIds = order.map(item => item.storeId);
