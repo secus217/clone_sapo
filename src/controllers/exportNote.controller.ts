@@ -7,7 +7,7 @@ const exportNoteController = new Elysia()
     .group("/manage", group =>
         group
             .use(exportNoteService)
-            .derive(isAdmin())
+            .derive(isAdminOrStaff())
             .post("/approve-import-note", async ({user, body, exportNoteService}) => {
                 return await exportNoteService.aprroveImportNote(user.id, body);
             }, {
