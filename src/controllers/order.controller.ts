@@ -7,7 +7,7 @@ const orderController = new Elysia()
     .group("/order", group =>
         group
             .use(orderService)
-            .derive(isAdmin())
+            .derive(isAdminOrStaff())
             .get("/get-order-detail", async ({query, ordersService}) => {
                     return await ordersService.getOrderDetail(query.orderId)
                 }, {
