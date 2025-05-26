@@ -3,7 +3,7 @@ import {Elysia} from "elysia";
 import Product from "../entities/Product";
 import Category from "../entities/Category";
 import Inventory from "../entities/Inventory";
-import {ExportNote, ReceiptNote} from "../entities";
+import {ExportNote, ExportNoteDetail, ReceiptNote} from "../entities";
 
 export class ProductService {
     async createProduct(data: {
@@ -74,12 +74,31 @@ export class ProductService {
         newExportNote.note="Tự động tạo cùng việc cung cấp hàng tới kho"
         newExportNote.type='nhap';
         await db.em.persistAndFlush(newExportNote);
+        const newExportNoteDetail=new ExportNoteDetail();
+        newExportNoteDetail.exportNoteId=newExportNote.id;
+        newExportNoteDetail.productId=productId;
+        newExportNoteDetail.quantity=quantity;
+        await db.em.persistAndFlush(newExportNoteDetail);
+
         return {
             success: true
         };
     } else{
         inven.quantity += quantity;
         await db.em.persistAndFlush(inven);
+        const newExportNote=new ExportNote();
+        newExportNote.toStoreId=storeId;
+        newExportNote.createrId=userId;
+        newExportNote.totalQuantity=quantity;
+        newExportNote.status='completed';
+        newExportNote.note="Tự động tạo cùng việc cung cấp hàng tới kho"
+        newExportNote.type='nhap';
+        await db.em.persistAndFlush(newExportNote);
+        const newExportNoteDetail=new ExportNoteDetail();
+        newExportNoteDetail.exportNoteId=newExportNote.id;
+        newExportNoteDetail.productId=productId;
+        newExportNoteDetail.quantity=quantity;
+        await db.em.persistAndFlush(newExportNoteDetail);
         return {
             success: true
         }

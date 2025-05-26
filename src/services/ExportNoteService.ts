@@ -183,7 +183,7 @@ export class ExportNoteService {
         const toStoreMap = new Map(toStores.map(to => [to.id, to]));
         const createrMap = new Map(creaters.map(creater => [creater.id, creater]));
         const totalPage=Math.ceil(total/limit);
-        return exportNotes.map(item => {
+        const exs= exportNotes.map(item => {
             const fromStore = item.fromStoreId !== undefined ? fromStoreMap.get(item.fromStoreId) : undefined;
             const toStore = item.toStoreId !== undefined ? toStoreMap.get(item.toStoreId) : undefined;
             const creater = item.createrId !== undefined ? createrMap.get(item.createrId) : undefined;
@@ -191,12 +191,16 @@ export class ExportNoteService {
                 ...item,
                 fromStore: fromStore,
                 toStore: toStore,
-                creater: creater,
-                currentPage:page,
-                limit:limit,
-                total:total
+                creater: creater
             } as any
-        })
+        });
+        return{
+            data:exs,
+            currentPage:page,
+            limit:limit,
+            total:total
+        }
+
     }
 
 
